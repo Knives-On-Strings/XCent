@@ -16,6 +16,8 @@ body:
       options:
         - VST3
         - CLAP
+        - AU
+        - AUv3 (iOS/iPadOS)
         - LV2
         - Standalone
         - Other
@@ -29,6 +31,7 @@ body:
         - Windows
         - macOS
         - Linux
+        - iOS/iPadOS
     validations:
       required: true
   - type: input
