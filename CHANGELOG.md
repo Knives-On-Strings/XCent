@@ -28,11 +28,8 @@
   root has `transform: scale()` for the user UI-scale setting, which makes
   it the containing block for `position: fixed` descendants — viewport-space
   coords from `getBoundingClientRect()` and mouse events were being re-scaled
-  by the transform. Symptom previously patched twice with viewport clamping
-  (commits `300a3ef`, `d5076db`); this release fixes the underlying cause by
-  portaling all floating elements to `document.body`. Captured as JUCE WebView
-  pattern #24 in `troubleshooting/patterns/juce8-critical-patterns.md` so
-  future floating UI is built right the first time.
+  by the transform. Symptom previously patched twice with viewport clamping; this release fixes the underlying cause by
+  portaling all floating elements to `document.body`.
 - **LCD modified-indicator case flip on first edit (UI42)** — Two bugs:
   `markEditBufferDirty()` was inside the `if (msg.param)` guard in `PARAM_UPDATE`
   handler, skipping the call when no param selected; and `padString` in
@@ -41,12 +38,6 @@
   flag wiring.
 - **Inter font + contrast pass on patch browser.**
 - **Manual link** — `/xcent/manual` redirect target.
-
-### Refactors
-
-- **Shared `useDelayedTooltip` + `Tooltip`** — Two near-identical copies in
-  `EzModePanel.jsx` and `ParameterGrid.jsx` extracted to
-  `hooks/useDelayedTooltip.js` and `components/Tooltip.jsx`.
 
 ### Known issues / RC scope
 
@@ -223,16 +214,6 @@ signature so a beta-tester report is actionable in one round.
   display `E ALG=1` instead of `E1111 ALG=1`. The 4-char operator mask was
   unused for these params and caused long names like `PBend Range=12` to
   be truncated.
-
-### Internal
-
-- `src/ui/src/store/useStore.js`: `setVoiceParamsKeepHistory()`.
-- `src/ui/src/App.jsx`: VOICE_RESTORE echo uses `setVoiceParamsKeepHistory`.
-- `src/ui/src/hooks/useWheelControl.js`: fractional accumulator, acc/lastDir in state.
-- `src/ui/src/components/DotMatrixLcd.jsx`: patch-level edit prefix = dirty letter only.
-
----
-
 ## v0.12.2 — 2026-05-03 — KVS velocity table, mouse wheel wheels, UI39+UI42 partial
 
 ### Features
@@ -252,21 +233,15 @@ signature so a beta-tester report is actionable in one round.
 ### Fixes
 
 - **DSP24-KVS: ROM-extracted KVS velocity → TL offset table.**
-  `FirmwareLogic::velocityToTlOffset` previously used a quadratic
-  approximation for the per-operator key-velocity-sensitivity (KVS)
-  attenuation. At KVS=5, vel=16, the approximation over-attenuated by
-  ~9 dB vs hardware. The error grew at low velocities with high KVS
-  settings (up to −10 dB at vel=16). A new `[tl-extract]` test in
-  `tests/test_rom_tl_extract.cpp` sweeps all 128 MIDI velocities × 8 KVS
-  levels through the actual DX100 ROM firmware, capturing the TL write
-  that occurs *immediately before* the YM2164 key-on (not the earlier
-  voice-load write — `captureNoteTl` was fixed to return the last TL
-  write before key-on, not the first). ROM values are monotonically
-  non-increasing with velocity; KVS=0 is all zeros; KVS=7 at vel=1 = 78
-  TL units (≈46 dB attenuation). `kKvsVelTlOffset[8][128]` added to
-  `RomTables.h`. `velocityToTlOffset` is now a direct table lookup
-  (2 clamped array accesses, no arithmetic). Zero regressions on
-  552-case test suite.
+  The per-operator key-velocity-sensitivity (KVS) attenuation
+  previously used a quadratic approximation. At KVS=5, vel=16, the
+  approximation over-attenuated by ~9 dB vs hardware. The error grew
+  at low velocities with high KVS settings (up to −10 dB at vel=16).
+  Velocity → TL is now a direct ROM-extracted lookup table sweeping
+  all 128 MIDI velocities × 8 KVS levels through the actual DX100 ROM
+  firmware. ROM values are monotonically non-increasing with velocity;
+  KVS=0 is all zeros; KVS=7 at vel=1 = 78 TL units (≈46 dB
+  attenuation). Zero regressions on 552-case test suite.
 
 - **UI42 partial — two bugs fixed + diagnostic added.**
   Two confirmed bugs causing erroneous dirty-flag state were fixed:
@@ -309,25 +284,6 @@ signature so a beta-tester report is actionable in one round.
   fully decays to zero (was running at 60 fps continuously even at idle).
   CPU meter EMA decay is faster (α=0.06 vs 0.033) — stale high readings
   clear in ~0.5 s instead of ~1 s. Attack still fast (α=0.3) for spikes.
-
-### Internal
-
-- `tests/test_rom_tl_extract.cpp`: `[tl-extract]` + `[velocity-full][.slow]`
-  test cases; `captureNoteTl` fixed to return last TL write before key-on.
-- `src/patch/RomTables.h`: `kKvsVelTlOffset[8][128]`.
-- `src/firmware/FirmwareLogic.cpp`: `velocityToTlOffset` → table lookup.
-- `src/ui/src/components/PitchModWheels.jsx`: wheel control, latest-ref pattern.
-- `src/ui/src/App.jsx`: VOICE_LOADED handler guarded + masterTune handling.
-- `src/PluginEditor.cpp`: `notifyVoiceLoaded` masterTune in payload;
-  VOICE_RESTORE sends `params` property (was `voice`).
-- `src/ui/src/components/DotMatrixLcd.jsx`: `[UI42 DIAG]` D/C suffix; UI39 `loadedSlot < 0` play-mode branch.
-- `src/PluginProcessor.h`: `setCurrentBankSlot()` accessor.
-- `src/PluginEditor.cpp`: SysEx receive calls `setCurrentBankSlot("SysEx", -1)`.
-- TODO board: **UI37** closed. **UI39** two sub-bugs fixed. **UI42** two sub-bugs fixed, primary still open.
-- Build number: 1 (→ v0.12.1).
-
----
-
 ## v0.12.0 — 2026-04-29 — Pitch EG (DSP12 + DSP13)
 
 Firmware-accurate Pitch EG closing the last two DSP v1 launch blockers.
@@ -364,44 +320,14 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 
 - **Hardware-comparison pipeline (new).** Tooling shipped this version for
   the DSP17 family of investigations (reusable for DSP12/DSP13 PEG
-  extraction next):
-  - `tools/segment_bank_recording.py` — slices a long bank recording
-    into per-patch WAVs by MIDI note-on times.
-  - `tools/compare_bank.py` — peak/RMS/LUFS deltas, attack/sustain/tail
-    spectral correlation. Auto-detects per-pair pitch ratio to handle
-    master-tune drift on the recording unit (currently ~+76 cents sharp
-    on the captured banks; pitch-aligned correlations restore most
-    patches above 0.85). PR-BURST detection for next-patch onset bleed.
-  - `tools/fit_alg_offsets.py`, `tools/fft_compare.py`,
-    `tools/dump_voice_params.py`, `tools/diag_release_rate.py`,
-    `tools/inspect_bank_recording.py` — supporting diagnostics.
-  - `tests/test_bank_render.cpp` `[bank_render][.slow]` — auto-renders
-    every bank with matching per-patch hold durations.
-  - `tests/test_gain_chain.cpp` `[gain_chain]` — gain-chain peak trace
-    + freq sweep verifying the chip output matches `kFreqToMulDt2`.
-  - `tests/test_freq_rom_sweep.cpp` `[freq_rom_sweep][.slow]` — drives
-    the actual DX100 ROM in the HD6303 emulator and captures register
-    writes per VCED freq value.
-  - `tests/test_pmd_scaling.cpp` — `[pmd_scaling]` compares FirmwareLogic
-    vs ROM register writes for diagnostic patches; `[pmd_sweep][.slow]`
-    extracts the PMD/AMD voice→register tables.
-  - `tests/test_kc_chromatic.cpp` `[kc_chromatic]` — chromatic render
-    harness for KC investigation.
-  - `NukedEngine::setDebugCaptureLog()` — register-write capture hook
-    used by the ROM diagnostic tests; production builds: zero overhead
-    (default nullptr).
-
-  Reference recordings live in `Docs/Reference_wav/Reference_banks/`
-  (~600 MB, gitignored). Diagnostic single-patch references and the KC
-  test capture remain in `Docs/Reference_wav/` and are tracked.
+  extraction next).
 
 ### Fixes
 
 - **+3 dB analog-stage calibration (DSP17 / DSP21).** Hardware-comparison
   data showed the plugin was systematically ~3 dB quieter than the DX100
   line-out across all 8 algorithms after segmentation contamination was
-  ruled out. Adopted `kPassbandGainDb = +2.5 dB` net in
-  `src/analog/OutputFilter.h`, then refactored the constant into two
+  ruled out. Adopted `kPassbandGainDb = +2.5 dB` net, then refactored the constant into two
   semantically-distinct components:
   - `kFilterPassbandGainDb = -0.5 dB` — IC12 active LPF passband loss,
     rigorously derived from the dual-input differential drive topology:
@@ -422,14 +348,11 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   calibration, per-algorithm median peak delta is within ±1 dB of zero
   across ALG 0–6.
 
-- **ROM-extracted PMD/AMD scaling tables (DSP19a).** A diagnostic test
-  (`tests/test_pmd_scaling.cpp` `[pmd_scaling]`) revealed that
-  `FirmwareLogic::writeLfoDepth` was writing voice PMD/AMD (VCED range
+- **ROM-extracted PMD/AMD scaling tables (DSP19a).** A diagnostic test revealed that
+  the LFO-depth path was writing voice PMD/AMD (VCED range
   0–99) directly to the YM2164 register. The actual DX100 firmware
   applies a non-trivial ROM-extracted scaling. Tables extracted by
-  sweeping the actual DX100 v1.1 ROM in the HD6303 emulator
-  (`[pmd_sweep][.slow]`) and added as `rom::kVoicePmdToReg[100]` and
-  `rom::kVoiceAmdToReg[100]` in `RomTables.h`:
+  sweeping the actual DX100 v1.1 ROM in the HD6303 emulator:
   - **PMD: approximately linear** (~127/99 expansion).
     voice 80 → reg 102. voice 99 → reg 127 (full scale).
   - **AMD: dramatically non-linear** with an exponential top end.
@@ -446,60 +369,12 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 
 - **DSP18 patch 102 KC — verified, no regression.** User-supplied hardware
   capture for patch 102 (codebase A02 Uprt Piano) across MIDI 57–63
-  (A3..D#4) — `Docs/Reference_wav/102-UPRT_PIANO-KC-test.wav` + matching
-  MIDI. New `tests/test_kc_chromatic.cpp` `[kc_chromatic]` harness renders
-  any patch through the production pipeline at an arbitrary MIDI sequence;
-  output as `…-PLUGIN.wav`. Per-note H1/H2/H3/centroid + pitch analysis:
+  (A3..D#4). Per-note H1/H2/H3/centroid + pitch analysis:
   plugin tracks hardware within ±1 dB on every harmonic and ±0.04 cents
   on pitch across the captured range. The KC break the user observed in
   v0.11.6 is not present in current code — almost certainly closed by
   DSP19a + the +3 dB calibration. Status: verified in narrow range; wider
   chromatic capture would formally close.
-
-- **Test goldens regenerated.** `tests/test_filter.cpp` and
-  `tests/test_render_golden.cpp` had ~7 assertion failures since the +3 dB
-  calibration shifted measured values. Goldens regenerated against current
-  Windows MSVC build; suite is now down from 8 failing test cases to 2
-  (both pre-existing and unrelated: `test_clean_mode` filtered-vs-clean
-  threshold, `test_library_manager` factory-b/d.xcb assignment).
-  `test_filter` (6 cases) + `test_render_golden` (3 sections) all green.
-  The renamed test (`test_filter_minus3db_at_7900hz` →
-  `test_filter_passband_7900hz`) reflects the fc=20 kHz reality where
-  7900 Hz is well within the passband, not the -3 dB knee.
-
-### Internal
-
-- New files: `src/patch/RomTables.h` gains `kVoicePmdToReg[100]` and
-  `kVoiceAmdToReg[100]`. Test harness: `tests/test_pmd_scaling.cpp`,
-  `tests/test_kc_chromatic.cpp`, plus the bank-comparison Python
-  pipeline (10 new tools). User-supplied hardware capture for KC
-  investigation (`102-UPRT_PIANO-KC-test.{wav,mid}` + plugin render).
-- Modified: `src/analog/OutputFilter.{h,cpp}` (gain split + comment
-  updates), `src/firmware/FirmwareLogic.cpp::writeLfoDepth` (apply
-  ROM tables), `src/fm_engine/NukedEngine.h` (`setDebugCaptureLog`
-  hook for diagnostic tests, zero-cost in production), `Docs/specs/
-  04-ANALOG-OUTPUT.md` (rigorous IC12 derivation), `Docs/TODO.md`
-  (DSP17/18/21 status updates + DSP23 filed), `Docs/v1-requirements.md`
-  (DSP17 launch-blocker status update), `CLAUDE.md` (audio-path
-  comment, current state, hardware-workflow bullets), `.continue-here.md`
-  (next-action and findings).
-- TODO board: **DSP21 sub-task (a)** schematic attribution closed.
-  **DSP18** verified not present in current code (status `[~]`).
-  **DSP19** narrowed via DSP19a PMD/AMD fix; remaining residuals
-  attributed to DSP23. **DSP23** newly filed.
-
-### Newly filed (not v1 blockers)
-
-- **DSP23** — OPP (YM2164) vs OPM (YM2151) PMS/AMS curve mismatch.
-  After DSP19a the C07 Heavysynth canonical worst-residual still shows
-  ~10× weaker LFO modulation than hardware, but PMD/PMS register
-  values match the ROM exactly. Divergence is downstream of the
-  register write — Nuked-OPM models the YM2151 OPM faithfully, but
-  the DX100 uses the YM2164 OPP, which likely has different LFO depth
-  coefficients at PMS=6/7. **Needs DX100 hardware measurement** to
-  characterize the OPP curve. Affects ~6 of the worst DSP19 residuals
-  (C07, B19, B16, B18, D04, D14).
-
 ### Known issues (carried over from v0.11.9)
 
 - **UI42** P1 v1 blocker — modified-indicator case flip never fires
@@ -542,15 +417,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   (edit-mode prefix with op-mask).
 - FUNC mode fallback (no param selected) was rendering `E1111 FUNC MODE`.
   Now correctly shows a static `F FUNC MODE`.
-
-### Related
-
-- Closes UI38 (full slot label, rolled into UI41).
-- Was intended to resolve UI39 at the user-facing level; the dirty-flag
-  visibility fix didn't land — see UI42.
-
----
-
 ## v0.11.8 — 2026-04-21 — Mouse-wheel Editing, ROM Bank Hardening, Smarter Auto-tagger
 
 ### Features
@@ -618,27 +484,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
     pushes a full bank refresh to the UI so the browser's other 23 slot
     names update, not just slot 0. A log line records the event for
     diagnostics.
-
-### Internal
-
-- New files: `src/ui/src/hooks/useWheelControl.js`.
-- Modified: `PluginProcessor.{h,cpp}` (`mouseWheelEnabled_`, getter/setter,
-  state serialisation, ROM-bank guards on store/rename/delete,
-  `sysexBulkDumpPending_` and `pollSysexBulkDump`); `PluginEditor.{h,cpp}`
-  (THEME_STATE payload, `SET_MOUSE_WHEEL_ENABLED` handler, bulk-dump
-  consumer in the editor timer); `AutoTagger.{h,cpp}` (ParamConditions,
-  richer threshold evaluator, algorithm allowlist parsing); `tools/auto-
-  tagger/{parse.py,build-rules.py}` (v2 corpus features + rule builder);
-  `src/ui/src/components/{EzModePanel,OutputKnob,SettingsModal,BrowserModal}.jsx`;
-  `src/ui/src/store/useStore.js`; `src/ui/src/App.jsx` (THEME_STATE
-  consumer).
-- TODO board: **UI35**, **UI36**, and **TOOL1** closed. **DEFER11**
-  (DX21 chorus) marked done on stale-item audit. **DSP15** updated to
-  reflect the v0.11.5 multi-format exporter. **TOOL3** added (cross-plugin
-  design/brand guidance doc).
-
----
-
 ## v0.11.7 — 2026-04-19 — Windows Installer (NSIS)
 
 ### Features
@@ -659,10 +504,10 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
     - Per-user: `%LOCALAPPDATA%\Programs\Common\VST3`,
       `%LOCALAPPDATA%\Programs\Common\CLAP`,
       `%LOCALAPPDATA%\Programs\Knives On Strings\XCent\`
-  - **WebView2 detection** mirrors `src/common/WebView2Detector.cpp` —
-    same GUID, same registry key, same minimum major version (109).
-    Bundled Evergreen Bootstrapper only runs when the runtime is missing
-    or too old; already-installed users see a no-op.
+  - **WebView2 detection** mirrors the in-plugin detection logic — same
+    GUID, same registry key, same minimum major version (109). Bundled
+    Evergreen Bootstrapper only runs when the runtime is missing or too
+    old; already-installed users see a no-op.
   - **Start Menu shortcuts** for the Standalone, the PDF manual, and the
     uninstaller (when the relevant components are selected).
   - **Uninstaller** registered at the correct HKLM/HKCU Add/Remove
@@ -670,34 +515,11 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
     `Documents/KnivesOnStrings/XCent/` is intentionally preserved on
     uninstall.
 
-- **Documentation regeneration.** `Docs/manual/MANUAL.md` →
-  `XCent-Manual.pdf` is regenerated at installer build time via `marked`
-  + Microsoft Edge headless (`--print-to-pdf`). No pandoc or Puppeteer
-  required. The generator lives at
-  `installer/windows/tools/build-manual-pdf.mjs`. `CHANGELOG.md` is
-  copied from the repo root into the installer payload at build time.
-
-### Internal
-
-- New files: `installer/windows/xcent-installer.nsi`,
-  `installer/windows/resources/license.txt`,
-  `installer/windows/resources/MicrosoftEdgeWebView2Setup.exe`,
-  `installer/windows/tools/{package.json,build-manual-pdf.mjs}`,
-  `scripts/build-installer.sh`, `installer/windows/README.md`.
-- New CMake target `XCent_Installer` (Windows-only, enabled when
-  `makensis` is on `PATH` or at the default NSIS location). Depends on
-  `XCent_VST3`, `XCent_CLAP`, `XCent_Standalone`.
-- TODO board: **DIST1** (Windows installer) and **DIST4** (Apple
-  Developer ID signing + notarization) closed.
-
-### Prerequisites for building the installer
-
-- NSIS 3.x (`winget install NSIS.NSIS`)
-- Node.js ≥ 18 (for `marked`)
-- Microsoft Edge (already a runtime requirement for XCent itself)
-
----
-
+- **Documentation regeneration.** The user manual is regenerated as
+  `XCent-Manual.pdf` at installer build time via `marked` + Microsoft
+  Edge headless (`--print-to-pdf`). No pandoc or Puppeteer required.
+  The changelog is copied from the repo at build time so it always
+  tracks the released version.
 ## v0.11.6 — 2026-04-21 — Graceful Fallback When WebView2 Runtime Is Missing
 
 ### Fixes
@@ -718,21 +540,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 
   macOS, Linux, iOS use JUCE's `defaultBackend` (WKWebView / WebKitGTK)
   which is always present — no detection, no panel.
-
-### Internal
-
-- New files: `src/common/WebView2Detector.{h,cpp}`,
-  `src/common/WebView2MissingPanel.{h,cpp}`
-- The panel is a plain `juce::Component` — no WebView dependency
-  (obviously) — so it renders correctly even when the runtime that
-  failed is the one we'd normally use
-- Test count unchanged: 502 / 501 passing (pre-existing
-  `test_library_manager` failure only)
-- Paves the way for a proper installer (TODO DIST1) that will bundle the
-  Evergreen Bootstrapper so most users never see this panel at all
-
----
-
 ## v0.11.5 — 2026-04-20 — SysEx Export with Format Picker + Loss Warnings
 
 ### Features
@@ -762,23 +569,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   footVolumeRange) when exporting to TX81Z; arVelocitySensitivity in all
   hardware formats (FB-01 export not supported, spec doc 10 §Export
   Matrix).
-
-### Internal
-
-- New `src/patch/SysExExporter.{h,cpp}` — `exportVoice(voice, format)` and
-  `exportBank(voices, format)` return `ExportResult { sysex, warnings }`;
-  `leastLossyDefault(voice)` maps firmware→format; `availableFormats()`
-  returns the 6 supported targets
-- New UI: `src/ui/src/components/ExportDialog.jsx`, "Save as SysEx…"
-  button in `BrowserModal.jsx`, `exportDialogOpen` state in store
-- New event bus messages: `GET_EXPORT_OPTIONS` →
-  `EXPORT_OPTIONS { formats, default, warnings }`,
-  `EXPORT_AS_SYSEX { formatId }` → native file-save dialog
-- New test file `tests/test_sysex_export.cpp` — 24 tests for format byte
-  layout, loss detection, least-lossy selection, round-trip
-- Test count: 502 total, 501 passing (pre-existing `test_library_manager`
-  failure only)
-
 ### Known issues
 
 - **TX81Z VCED edge case.** The exporter appends `operatorOnOff` as byte
@@ -806,24 +596,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   as `.xcb`. Hardware interchange still works both directions via the
   dedicated import/export paths; `.syx` just isn't used for our own
   storage anymore.
-
-### Internal
-
-- **Dev-phase migration.** On startup, `SysExLibrary::initialize()` now
-  deletes any leftover `*.syx` files in the library directory before
-  writing fresh `.xcb`. This is a clean-start migration — no attempt to
-  preserve pre-0.11.4 library state. Users on earlier versions will have
-  their `my-sounds.syx` deleted on first 0.11.4 launch; factory banks are
-  reseeded from the embedded data with no loss.
-- `XcbBankFile::read/write` (already shipped in 0.11.0) is the only
-  persistence path
-- `library.json` filename references migrated `.syx`→`.xcb` on load
-  (back-compat with old JSON files pointing at deleted `.syx` entries)
-- Test count unchanged: 478 (477 passing; same pre-existing
-  `test_library_manager` slot-assignment failure)
-
----
-
 ## v0.11.3 — 2026-04-20 — SysEx Import for All 5 Hardware Formats
 
 ### Features
@@ -851,19 +623,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   (format `03`). On import, the parser defaults to DX100 context; if
   `chorusSwitch=1` (VCED byte 64, a DX21-specific feature the DX100
   firmware never sets), it promotes to `OPP/DX21/DX21`.
-
-### Internal
-
-- New `src/patch/SysexParser.{h,cpp}` methods: `parseAced`,
-  `parseMultiMessage` (for ACED+VCED combined streams), `parseTx81zVmem`
-- All existing importers (DX100 VCED, VMEM, FB-01) now also set
-  `hardwareContext` correctly — previously they left it at constructor
-  defaults
-- New test file `tests/test_tx81z_sysex.cpp` — 14 test cases covering
-  each new path plus context regression tests
-- Test count: 478 total (477 passing, 1 pre-existing
-  `test_library_manager` failure unchanged)
-
 ### Known issues
 
 - **TX81Z VMEM byte 73–83 ACED packing** is inferred from analysis rather
@@ -878,8 +637,7 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 
 ### Features
 
-- **Compile-time file logger.** New `src/common/DebugLog.{h,cpp}` with
-  `XCENT_LOG_INFO/WARN/ERROR(source, fmt, ...)` macros. Gated by the
+- **Compile-time file logger.** Gated by the
   CMake option `XCENT_DEBUG_LOGGING` (default ON for now; flip to OFF for
   public shipping). When disabled the macros expand to nothing — zero
   runtime cost.
@@ -888,19 +646,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   Overwritten on each launch (no rotation yet). Thread-safe via
   `std::mutex`. Auto-flushes so a crash doesn't lose recent entries.
   Silent fallback if the file can't be opened (no plugin crash).
-
-### Internal
-
-- **Instrumented call sites** — plugin constructor/destructor + version,
-  `loadPatch`, `applyVoiceParamFromUI`, `getStateInformation`,
-  `setStateInformation` (including what was restored). Editor
-  constructor, the WebView2 user data folder path on Windows, every
-  `getResource` call (URL + returned byte size) including cache misses,
-  `UI_READY` arrival. Enough to diagnose blank-WebView beta failures
-  without physical access to the tester's machine.
-
----
-
 ## v0.11.1 — 2026-04-20 — Patch Level Normalization, RAM Bank Tags, State Robustness
 
 ### Fixes
@@ -933,15 +678,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   falls back to bank 100 slot 0 (IvoryEbony) when either attribute is
   missing from state, and `getIntAttribute("slot", 0)` (was `-1`). Covers
   fresh installs, decode failures, and partial state files.
-
-### Internal
-
-- `TOOL2` queued in `Docs/TODO.md` — compile-time-gated debug logger for
-  dev/beta builds
-- Build number now increments per merge cycle
-
----
-
 ## v0.11.0 — 2026-04-20 — Unified Patch Format, DX21 & FB-01 Support
 
 ### Features
@@ -1012,25 +748,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   empty data.
 - **VoiceConvert `toVar` duplicate** — Per-operator `"ampModSens"` key
   was a dead write duplicating `"amsOnOff"`. Removed.
-
-### Internal
-
-- `VoiceParams` struct is 122 bytes; serialized via `.xcb` with forward
-  compat
-- `VoiceConvert::toVar/fromVar` round-trips all OPZ + model-specific
-  fields
-- `firmware-disassembly-agent` (internal RE agent) gained HD6303/Z80 ISA
-  knowledge, Yamaha MMIO landmarks, and the 8-priority-table extraction
-  workflow
-- ROM analysis docs: `rom_analysis_dx100.md` (consolidated from 4 prior
-  docs), `rom_analysis_dx21.md` (identical tables confirmed),
-  `rom_analysis_fb01.md` (arVelocitySensitivity formula, LVS
-  architecture, D1R packing)
-- Test count: 463/464 passing (only `test_library_manager`
-  slot-assignment issue remains, pre-existing)
-
----
-
 ## v0.10.0 — 2026-04-19 — Patch Browser & Auto-Tagging
 
 ### Features
@@ -1058,16 +775,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
     inline
   - **Custom tags** — users can create their own tags in addition to the
     factory set
-
-### Internal
-
-- `AutoTagger` (C++) reads `auto-tag-rules.json` from BinaryData
-- `TagStore` persists per-user custom tags + overrides
-- `TAG_STATE` / `CUSTOM_TAG_ADD` / `SET_TAGS` message bus events
-- Factory SYX writes on first run so library scanning finds them
-
----
-
 ## v0.9.14 — 2026-04-06 — iOS Testing & On-Screen Controls
 
 ### Features
@@ -1099,17 +806,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 - **VU Meter (iOS)** — Routed VU level through the central message store
   instead of a separate event listener, fixing iOS WebKit not dispatching
   to duplicate `__juce__nativeEvent` listeners.
-
-### Internal
-
-- `injectPitchBend()` and `injectCC()` added to PluginProcessor (lock-free
-  MIDI FIFO)
-- All iOS-specific C++ code behind `#if JUCE_IOS` preprocessor guards
-- React iOS detection via `platform` flag in THEME_STATE message
-- Custom xcassets via `JUCE_CUSTOM_XCASSETS_FOLDER` (bypasses JUCE icon
-  generator)
-- 371/372 tests passing
-
 ## v0.9.1 — 2026-04-02 — FB-01 Velocity Mode
 
 ### Features
@@ -1133,17 +829,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 - Factory patches now use authentic FB-01 per-operator KVS when mode is
   enabled
 - User patches remain unaffected (KVS values preserved as-is)
-
-### Internal
-
-- FB-01 KVS data extracted from FB-01 ROM banks 1-4 (verified identical
-  to Factory banks 3-6)
-- 192-voice KVS lookup table compiled into plugin (no runtime JSON
-  parsing)
-- Applied automatically on factory patch load when FB-01 mode enabled
-- See `Docs/research/fb01-kvs-investigation.md` for full extraction
-  methodology
-
 ## v0.9.0 — 2026-04-01 — Rebrand, Audio Clicking Fix, Velocity Sensitivity
 
 ### Breaking Changes
@@ -1190,20 +875,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
   where YM2164 produces continuous audio independent of CPU register
   writes. See `Docs/comparison-report-2026-04-01-fast-clicks.md` for
   analysis.
-
-### Internal
-
-- **MIDI Implementation Test Suite** — 15 new tests covering velocity,
-  note on/off, pitch bend, CC1/CC7/CC64/CC123, program change, note
-  range.
-- **351 tests, 14,643 assertions** — all passing.
-
-### Backlog Items Added
-
-- FB-01 output stage emulation (brighter sound)
-- DX21 dual mode/chorus
-- FB-01 sound ROMs
-
 ## v0.8.4 — 2026-03-29 — Display Fixes, CPU Optimization, Accessibility
 
 ### Bug Fixes
@@ -1225,13 +896,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 ### UI Polish
 - **About Modal Links** — Website link now goes directly to https://knivesonstrings.com/xcent. GitHub link updated to https://github.com/Knives-On-Strings/xcent. "Docs" renamed to "Manual".
 - **Version Display** — Now correctly shows v0.8.4 (fixed UI package.json from 0.7 to 0.8).
-
-### Internal
-- Idle detection in both FirmwareLogic and ROM firmware paths
-- Load point snapshot captured on `VOICE_LOADED` for recall/reset functionality
-- Comprehensive accessibility audit completed (see `accessibility-audit.md`)
-- 348 tests, 10,679 assertions — all passing
-
 ## v0.8.0 — 2026-03-28 — UI Overhaul, MIDI Completion, DSP Accuracy
 
 ### New Features
@@ -1263,11 +927,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 - **PluginProcessor cleanup** — ROM firmware state extracted into RomState sub-struct.
 - **pluginval** — Passes at strictness level 10 (maximum). Factory preset name fix (getProgramName).
 - **Build system** — `scripts/build.sh` auto-increments build number. Binary data refresh on every build.
-
-### Internal
-- 348 tests, 10,679 assertions — all passing
-- PEG accuracy test harness built (`test_peg_lfo_delay_accuracy.cpp`) with ROM comparison infrastructure
-
 ## v0.7.1 — 2026-03-26 — Frequency Table Fix & DSP Accuracy Overhaul
 
 ### Critical Fix
@@ -1284,14 +943,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 - D17 FMSAWTOOTH: harmonics within **±0.3 dB**
 - B01 Solid Bass: harmonics within **±1.0 dB**
 - No ultrasonic energy above 10 kHz in any hardware recording (aliasing is not a factor)
-
-### Internal
-- `kFreqToMulDt2[64][2]` lookup table in RomTables.h (verified against manual)
-- `test_carrier_norm.cpp`: spectral comparison test for ALG=4 and ALG=7 against 192 kHz references
-- Render tool updated: MIDI note 60, 8s duration, note-off at 7.5s (matching hardware recordings)
-- 192 kHz / 32-bit float hardware references: D01 Glocken, D06 Good Vibes, D15 FM SQUARE, D17 FMSAWTOOTH, B01 Solid Bass, C06 S/H Synth
-- 350 test cases, 10,685 assertions — all passing
-
 ## v0.7.0 — 2026-03-25 — ROM Firmware & DSP Accuracy
 
 ### New Features
@@ -1315,16 +966,6 @@ User AB-confirmed audibly meaningful improvement over v0.11.9.
 - B01 Solid Bass spectral centroid: **1.09x** hardware (native rate)
 - C06 S/H Synth spectral centroid: **1.12x** hardware (native rate)
 - Remaining gap is from LFO phase/LFSR state differences (inherent, not fixable)
-
-### Internal
-- SCI receive FIFO in Hd6303 (256-byte buffer prevents byte loss)
-- NVRAM factory initialization from ROM data (24 voices + system params)
-- `VoiceConvert::toVmem()` — inverse of `fromVmem` with correct byte 45 packing
-- `SysexParser::exportVced()` / `exportVmem()` — complete SysEx message generation
-- NVRAM layout doc ($08-NVRAM-LAYOUT.md) corrected for byte 45 bit fields
-- New reverse-engineering docs: `ol-to-tl-investigation.md`
-- 9 new test files, 344 total test cases, 10,682 assertions
-
 ## v0.6 — 2026-03-21 — Initial Release
 
 - Full 4-operator FM synthesis via Nuked-OPM (cycle-accurate YM2164)
