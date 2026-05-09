@@ -81,14 +81,52 @@ cp "XCent.clap" ~/Library/Audio/Plug-Ins/CLAP/
 cp -r "XCent.component" ~/Library/Audio/Plug-Ins/Components/
 ```
 
-**Linux:**
+**Linux (recommended — installer):**
+
+Download `XCent-0.14.0-rc1-linux-x86_64.tar.gz`, extract it, and run
+`install.sh`:
+
 ```bash
-# VST3
-cp -r "XCent.vst3" ~/.vst3/
+tar -xzf XCent-0.14.0-rc1-linux-x86_64.tar.gz
+cd XCent-0.14.0-rc1-linux-x86_64
+./install.sh                # per-user install (default)
+./install.sh --system       # system-wide install (requires sudo)
+./install.sh --uninstall    # remove a previous install
+```
+
+The installer places:
+
+- **Per-user (default)** — VST3 in `~/.vst3/`, CLAP in `~/.clap/`,
+  LV2 in `~/.lv2/`, Standalone in `~/.local/bin/`.
+- **System-wide (`--system`)** — VST3 / CLAP / LV2 under `/usr/lib/`,
+  Standalone in `/usr/local/bin/`.
+
+It also copies the LGPL-2.1 `NOTICES.txt` file alongside the binaries
+so the LGPL component (Nuked-OPP) carries its required attribution at
+the install site.
+
+**Linux (manual):**
+
+If you'd rather not run a script, the bundle's contents can be copied
+manually:
+
+```bash
+# VST3 — copy the entire XCent.vst3 folder
+cp -r plugins/VST3/XCent.vst3 ~/.vst3/
 
 # CLAP
-cp "XCent.clap" ~/.clap/
+cp plugins/CLAP/XCent.clap ~/.clap/
+
+# LV2 — copy the entire XCent.lv2 folder
+cp -r plugins/LV2/XCent.lv2 ~/.lv2/
+
+# Standalone
+cp plugins/Standalone/XCent ~/.local/bin/
 ```
+
+If you choose the manual route, also copy `NOTICES.txt` somewhere
+discoverable (e.g. `~/.local/share/doc/xcent/`) so the LGPL attribution
+is preserved.
 
 **iOS/iPadOS:** Install via the App Store or TestFlight (beta).
 
