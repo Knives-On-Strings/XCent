@@ -5,7 +5,7 @@
 - **Formats:** VST3, CLAP, AU, LV2 (desktop) · AUv3 (iOS/iPadOS)
 - **Platforms:** Windows, macOS, Linux, iOS/iPadOS
 - **Status:** Beta
-- **Version:** 0.9.13
+- **Version:** 0.14.0-rc1
 
 ## Links
 
