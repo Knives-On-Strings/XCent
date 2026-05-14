@@ -69,16 +69,57 @@ Copy-Item "XCent.clap" -Destination "$env:ProgramFiles\Common Files\CLAP"
 
 If you install manually, you may need to install the [Microsoft Edge WebView2 runtime](https://developer.microsoft.com/microsoft-edge/webview2/) separately.
 
-**macOS:**
+**macOS (recommended — installer):**
+
+Download `XCent-0.14.0-rc1-macos.zip`, extract it, and double-click `XCent-0.14.0-macos.pkg`. The installer lets you choose which formats to install:
+
+- **VST3** → `/Library/Audio/Plug-Ins/VST3/` (system-wide, visible to all DAWs)
+- **CLAP** → `/Library/Audio/Plug-Ins/CLAP/`
+- **AU (Audio Unit)** → `/Library/Audio/Plug-Ins/Components/`
+- **Standalone** → `/Applications/`
+
+> **Gatekeeper notice (early releases):** Until XCent is distributed with a Developer ID certificate, macOS will block the installer and plugins with a security warning. To proceed:
+>
+> 1. When the warning appears, click **OK** to dismiss it.
+> 2. Open **System Settings → Privacy & Security**.
+> 3. Scroll down to the Security section — you'll see a message about XCent being blocked.
+> 4. Click **Open Anyway**, then confirm in the dialog that follows.
+>
+> You may need to do this once for the installer and once for each plugin format the first time your DAW loads it. This is a one-time step per format.
+>
+> If you're on macOS 13 Ventura or earlier, the setting is in **System Preferences → Security & Privacy → General**.
+
+**macOS (manual):**
+
+Extract the zip and copy the plugin formats yourself:
+
 ```bash
 # VST3
-cp -r "XCent.vst3" ~/Library/Audio/Plug-Ins/VST3/
+cp -r "plugins/VST3/XCent.vst3" ~/Library/Audio/Plug-Ins/VST3/
 
 # CLAP
-cp "XCent.clap" ~/Library/Audio/Plug-Ins/CLAP/
+cp -r "plugins/CLAP/XCent.clap" ~/Library/Audio/Plug-Ins/CLAP/
 
-# AU (if included)
-cp -r "XCent.component" ~/Library/Audio/Plug-Ins/Components/
+# AU
+cp -r "plugins/AU/XCent.component" ~/Library/Audio/Plug-Ins/Components/
+
+# Standalone
+cp -r "plugins/Standalone/XCent.app" /Applications/
+```
+
+If macOS quarantines the copied files, run the included helper script (it also refreshes the AU cache automatically):
+
+```bash
+bash clear-quarantine.sh
+```
+
+Or clear the quarantine flag manually:
+
+```bash
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/XCent.vst3
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/XCent.clap
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/XCent.component
+xattr -dr com.apple.quarantine /Applications/XCent.app
 ```
 
 **Linux (recommended — installer):**
@@ -841,7 +882,7 @@ Full license texts are included in the installer as `NOTICES.txt`.
 
 ---
 
-**XCent User Manual v0.14.0-rc1** — May 2026  
+**XCent User Manual v0.15.1-rc2** — May 2026  
 © 2026 Knives On Strings. All rights reserved.
 
 For the most up-to-date version of this manual, visit [knivesonstrings.com/xcent/manual](https://knivesonstrings.com/xcent/manual).

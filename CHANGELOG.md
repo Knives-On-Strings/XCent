@@ -1,5 +1,188 @@
 # XCent Changelog
 
+## v0.15.1-rc2 — 2026-05-14 — Portamento calibrated; hardware-validation pass; installer pipeline supports rc/beta versions
+
+### Fixes
+
+- **Portamento now matches DX100 hardware (DEFER18)** — Plugin glide
+  was previously ~2.2× slower than hardware at every portaTime, and
+  engaged under more conditions than the real device. Same-day fix
+  after the 2026-05-14 hardware sweep: rate scaled by 22/10 in
+  `FirmwareLogic::computePortaRate` and triggering tightened to
+  mono + legato. Post-fix sweep matches hardware to a mean |dGlide|
+  of 21 ms across portaTime 10..75. Trigger behaviour now lines up
+  with hardware: portamento only engages when `polyMono=1` AND a
+  previous voice is still held when the new note arrives. `portaMode`
+  (full-time vs fingered) is preserved for SysEx round-tripping but
+  no longer changes triggering (DX100 treats both modes identically).
+
+### Build / distribution
+
+- **Installer pipeline supports suffixed versions** — `stage_release.py
+  --platform windows --build` now produces `XCent-Setup-{version}.exe`
+  matching `src/ui/package.json` exactly, including `-rc` / `-beta`
+  suffixes. Previously the installer fell back to a synthesised
+  numeric string (`MAJOR.MINOR.BUILD_NUMBER`) and the stager couldn't
+  find the artifact at the expected filename.
+
+### Verified
+
+- **Portamento curve verified against hardware (DEFER18-validation).**
+  18 captures total (9 portaTime values × HW + plugin). Curve shape
+  already matched hardware before the fix (both quasi-exponential,
+  glide doubling every +23 CC5 units); post-fix the rate constant
+  matches too. See `Docs/measurements/2026-05-14-portamento-curve.md`.
+- **KVS velocity sensitivity matches hardware exactly** — 36 plugin
+  captures vs 36 hardware captures across KVS ∈ {0, 3, 5, 7} × velocity
+  ∈ {1..127, 9 points}. Mean |peak delta| 0.37 dB; mean |sustain-RMS
+  delta| 0.12 dB. 36/36 |dRMS| < 3 dB. Velocity → TL routing through
+  `kVelocityCurves` is hardware-exact at every KVS value (closed in
+  `Docs/KNOWN-LIMITATIONS.md`).
+- **Chromatic pitch accuracy verified end to end (DSP18 wider range)**
+  — 61-note sweep MIDI 36..96 (5 octaves). Hardware and plugin both
+  track equal-temperament with mean error inside ±0.5 cents; plugin
+  vs hardware mean delta −0.13 cents, max 1.44 cents. 61/61 captures
+  within ±5 cents. DSP18 promoted to `[x]`.
+- **Saw / square / triangle LFO match hardware on amplitude + rate**
+  — 30 plugin vs 30 hardware captures across the three deterministic
+  LFO waveforms × 5 LFS values × 2 isolation patches. Amplitude path
+  matches everywhere (14/15 LSD < 0.3); pitch path matches fundamental
+  rate and total mod power on every waveform but shows harmonic-shape
+  divergence on triangle/saw (filed as DEFER17, the OPP/OPM PMS-curve
+  fingerprint).
+## v0.15.0-rc2 — 2026-05-12 — TEL1 first soft-launch end-to-end on macOS; output-stage Phase A
+
+### Fixes
+
+- **TEL1 host_version on Standalone (macOS)** — `/api/issues` was rejecting
+  every form submission with `host_version is required`. Plugin now sends
+  the OS version (e.g. `"macOS 14.5"`, `"Windows 11"`) via
+  `juce::SystemStats::getOperatingSystemName()` for both Standalone and
+  DAW contexts — JUCE doesn't expose the host application's version
+  separately, but the OS string is a useful triage signal that is always
+  non-empty.
+- **TEL1 worker-thread crash on quit (macOS)** — `XCent quit unexpectedly`
+  SIGSEGV inside `objc_autoreleasePoolPop` during process teardown. The
+  telemetry worker accumulated Cocoa autorelease objects from each POST
+  into its outer JUCE-managed pool; on shutdown that pool teardown raced
+  with Cocoa finalisation and dereferenced freed memory. Fix wraps each
+  drain + each POST in a scoped `JUCE_AUTORELEASEPOOL` (releases
+  transient objects per-iteration) and tightens the POST timeout from
+  5s to 1.5s so the worker can finish in-flight requests before being
+  abandoned by the 2s join window. Same fix applied to
+  `IssueReporter::ping()`.
+- **TEL1 `session_end` lost on clean quit** — The telemetry singleton's
+  destructor only ran during C++ static finalisation, by which point the
+  UserPreferences singleton holding `install_id` had already been torn
+  down. The worker's final drain read an empty install_id and the event
+  silently dropped. Fix adds a `PluginProcessor`-level instance counter
+  that deterministically calls `TelemetryClient::stop()` from the
+  last-live-instance destructor — while prefs are still alive — so
+  session_end actually POSTs.
+- **Standalone state persistence on macOS** — Settings made during a
+  session (theme, scale, displayStyle) were lost on close. Worked on
+  Windows. Two compounding bugs:
+  - **`shutdown()` ordering** — Our custom `XCentStandaloneApp::shutdown()`
+    destroyed `mainWindow` before ever calling `savePluginState()`, so
+    `pluginProperties` retained whatever stale `filterState` was last
+    cached. `savePluginState()` is only triggered automatically by
+    `systemRequestedQuit()`, which on macOS doesn't fire when the user
+    clicks the window's red close button (only Cmd+Q routes that way).
+    Windows routes window close through systemRequestedQuit, which is
+    why this never surfaced there. Fix calls `savePluginState()`
+    explicitly in `shutdown()` before destruction.
+  - **Foreign children accumulating in filterState** — `setStateInformation`
+    calls `apvts.replaceState(ValueTree::fromXml(...))`, which adopted
+    our `XCentVoice` / `XCentRom` / `Scope` / `XCentPrefs` nodes into
+    the APVTS state tree. Each subsequent save reproduced them via
+    `copyState()`, then we *appended* a fresh copy on top — duplicates
+    compounded every cycle, and `getChildByName` returned the oldest
+    stale match on load. Fix scrubs known foreign-child tags from the
+    APVTS XML before re-appending fresh ones; one user's `filterState`
+    went 8705 bytes → 664 bytes after the fix.
+
+### Features
+
+- **HMAC-signed report-form & API URLs** — The hosted issue-report form
+  (`report.knivesonstrings.com`) and the kos-worker API endpoints
+  (`/api/ping`, `/api/telemetry`, `/api/issues`) now require an
+  HMAC-SHA256 signature on every request. The plugin signs each URL
+  with a shared secret compiled in via CMake
+  (`XCENT_FEEDBACK_FORM_SECRET`); the server recomputes the signature
+  and 302-redirects to `www.knivesonstrings.com` (form) or returns 401
+  (API) when it doesn't match. Drive-by visits to the form URL or
+  random `curl` against the API are no longer enough to reach the
+  endpoints — you have to know the secret. Replay window is ±300 s
+  via a signed `ts` param. The secret is a spam moat, not a real
+  credential — rotate by bumping the CMake var + worker env in lockstep.
+
+- **MIDI CC11 (Expression)** — XCent now responds to CC11 as a
+  multiplicative volume scale on top of CC7. CC11=127 (default) is
+  unity — no effect — and lower values attenuate alongside CC7. Lets
+  you ride expression as a separate automation lane from master volume,
+  the way string libraries and wind controllers expect. Not on the
+  original DX100; this is a plugin extension. The routing target will
+  become configurable in a future release (DEFER13: volume / TL bias /
+  off).
+- **macOS installer (DIST2)** — Signed `.pkg` installer wrapped in a `.dmg`
+  with embedded README, licence, and auto-generated manual PDF.
+  Welcome / licence screens included; installs VST3, CLAP, AU, and the
+  Standalone app to the standard `~/Library/Audio/Plug-Ins/` paths.
+  `clear-quarantine.sh` helper ships alongside for users who download the
+  raw plugin folders rather than running the installer — strips Gatekeeper
+  quarantine attributes and auto-refreshes the AU cache.
+- **TX81Z output stage (DEFER6, Phase A)** — Added a `TX81ZOutputStage`
+  implementing the YM3012 / DX21–DX27–TX81Z analog output path alongside
+  the existing DX100 stage. Output-stage selector lives in Settings → Sound,
+  feature-flagged off until hardware calibration completes.
+
+### Verified
+
+- **S/H LFO matches hardware across the LFS range** — 60-second
+  spectral captures at 9 LFS values × 2 isolation patches confirmed
+  the plugin's S/H LFO is statistically equivalent to the DX100 in
+  modulation-spectrum shape (17/18 readings below the "audibly
+  different" log-spectral-distance threshold). Step rates match
+  exactly at lfs=20/30 and within 5–15 % across the rest of the
+  range. Closes the `[~]` S/H LFO entries in v1-requirements. Residual
+  mid-LFS step-rate slope gap filed as DEFER14 — not user-audible.
+- **KVS velocity sensitivity matches hardware exactly** — 36 plugin
+  captures vs 36 hardware captures across KVS ∈ {0, 3, 5, 7} ×
+  velocity ∈ {1..127, 9 points}. Mean |peak delta| 0.37 dB; mean
+  |sustain-RMS delta| 0.12 dB. 36/36 |dRMS| < 3 dB. Velocity → TL
+  routing through `kVelocityCurves` is hardware-exact at every KVS
+  value, including the no-sensitivity baseline (KVS=0: ±0.04 dB).
+- **Chromatic pitch accuracy verified end to end (DSP18 wider range)**
+  — 61-note sweep MIDI 36..96 (5 octaves) at v=100 on a stable
+  all-carrier patch. Hardware and plugin both track equal-temperament
+  with mean error inside ±0.5 cents; plugin vs hardware mean delta
+  −0.13 cents, max 1.44 cents. **61/61 captures within ±5 cents.** No
+  KC discontinuity anywhere in the playable range.
+- **Saw / square / triangle LFO match hardware on amplitude and
+  fundamental rate** — Same harness extended to the deterministic LFO
+  waveforms (`lw=0/1/2`) at LFS = {10, 20, 40, 60, 80} on both
+  isolation patches (30 hardware captures + 30 plugin captures).
+  Amplitude-routed LFO matches across all three waveforms (14/15
+  LSD < 0.3, with the only marginal capture — triangle/lfs=60 at
+  0.361 — still showing matched first-null). Pitch-routed LFO matches
+  on fundamental rate (centroid agreement within ~1 %) and total
+  modulation power (dPwr within 0.34 dB everywhere) on every
+  waveform; the residual harmonic-shape divergence on triangle/saw
+  pitch is the known OPP/OPM PMS-curve issue (filed as DEFER15) and
+  not user-audible as a rate or depth mismatch.
+
+### Fixes
+
+- **Bank/slot vs VCED state desync (UI39)** — When you save a project,
+  edit the patch bank externally (e.g. SysEx import that overwrites a
+  slot), then reopen the project, the LCD used to claim the slot was
+  unchanged even though the actual sound came from the saved snapshot.
+  Restore now compares the saved voice against the bank's current
+  contents at the same slot and shows the modified-indicator when they
+  differ — so you can see at a glance that what you're hearing isn't
+  what the slot label says, and use Recall to reload the slot's current
+  contents if you want to.
+
 ## v0.14.0-rc1 — 2026-05-09 — Onboarding tour, parameter tooltips, WebView floating-UI fix
 
 > Note: skipping 0.13.0 — for luck. 🍀
