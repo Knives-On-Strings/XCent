@@ -1,5 +1,69 @@
 # XCent Changelog
 
+## v0.15.11 — 2026-05-17 — Network feature on by default; user-preferences consolidation; macOS uninstaller
+
+### Features
+
+- **Anonymous opt-out telemetry + in-plugin issue reporter are now
+  on by default.** The kos-worker Cloudflare backend (api.knivesonstrings.com)
+  is live, so the soft-launch gate on `XCENT_NETWORK_ENABLED` is removed
+  and default builds compile in the full feature: anonymous session
+  events POST to `/api/telemetry`, the Report-an-Issue button on the
+  About modal pings `/api/ping` and opens a hosted GitHub-issue form
+  at `report.knivesonstrings.com`. First launch shows a mandatory
+  privacy slide at the end of the onboarding tour with the option to
+  opt out. Opt-out is also available any time via Settings → Privacy.
+  All telemetry events are keyed by an anonymous per-install UUID with
+  no personal data. 
+
+- **macOS uninstaller (`uninstall.sh`)** — DMG now ships an
+  `uninstall.sh` script that cleanly removes all four plugin bundles
+  (VST3, CLAP, AU, Standalone) and forgets the `pkgutil` receipts.
+  User data under `~/Documents/KnivesOnStrings/XCent/` (patches,
+  preferences, logs) is preserved by default; `--purge` wipes it too.
+  Bash 3.2-safe so it runs under the macOS system `/bin/bash`.
+  Flags: `--dry-run` (preview), `--yes` (skip prompts), `-h` (help).
+  Documented in the in-DMG `README.rtf` and in `Docs/manual/MANUAL.md`.
+
+### Build / distribution
+
+- **Automated CLAP + pluginval pre-flight** — `tools/stage_release.py
+  --build` now runs `pluginval` (strictness 10, VST3 + AU on macOS)
+  AND `clap-validator` against the CLAP bundle before staging. Any
+  validator failure fails the stage. Binaries resolved via
+  `$PLUGINVAL` / `$CLAP_VALIDATOR` env vars, sibling-source build at
+  `../pluginval`, `~/.cargo/bin`, or PATH. `--validate` / `--no-validate`
+  to override. v0.15.11 macOS build passes 21/21 pluginval (VST3 + AU)
+  and 18/18 clap-validator (3 skipped — optional preset-discovery
+  factory). One harmless clap-validator warning is expected and
+  documented in `Docs/v1-requirements.md` Performance section.
+
+### Refactors
+
+- **User preferences consolidated into a single file.** Pre-launch
+  cleanup: three storage locations collapsed into one. Before, user
+  preferences were spread across hand-rolled `settings.xml` (Standalone
+  only, written in dtor only), `preferences.settings` (PropertiesFile
+  via UserPreferences — telemetry + network keys), and WebView
+  localStorage (`xcent-tour-complete`, `xcent-tooltips-enabled`,
+  `xcent-default-modern`). After: every user-configurable preference
+  lives in `Documents/KnivesOnStrings/XCent/preferences.settings` under
+  the `ui.*` namespace, with DAW state still mirroring UI prefs via
+  `<XCentPrefs>` for in-host persistence. 
+
+- **DEFER14 / DEFER17 dependency framing corrected** —
+  the S/H LFO mid-LFS slope refinement and the triangle/saw LFO
+  pitch-waveshape residual were both labelled "blocked on DSP23"
+  in TODO.md, but DSP23 closed 2026-05-04 with its four correction
+  tables (`opp::kPmsScale`, `opp::kAmsScale`, `opp::kArRemap`,
+  `opp::kFblRemap`) already in place — and the May-12 sweeps that
+  filed both DEFER entries were run *with* that correction applied.
+  TODO.md now correctly identifies them as separate divergences
+  outside the scope of DSP23's amplitude/AR/feedback compensation,
+  in the same "likely irreducible without Nuked-OPP internal
+  patching" category as DSP23's documented FBL=6/7 and AR=18–30
+  chip-level residuals.
+
 ## v0.15.1-rc2 — 2026-05-14 — Portamento calibrated; hardware-validation pass; installer pipeline supports rc/beta versions
 
 ### Fixes
