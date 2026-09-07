@@ -1,20 +1,18 @@
 # XCent Changelog
 
-## v0.15.11 — 2026-05-17 — Network feature on by default; user-preferences consolidation; macOS uninstaller
+## v0.15.18 — 2026-09-07 — Crash on quit fixed; factory patches no longer flagged modified after a project reload
 
-### Features
+### Fixes
 
-- **Anonymous opt-out telemetry + in-plugin issue reporter are now
-  on by default.** The kos-worker Cloudflare backend (api.knivesonstrings.com)
-  is live, so the soft-launch gate on `XCENT_NETWORK_ENABLED` is removed
-  and default builds compile in the full feature: anonymous session
-  events POST to `/api/telemetry`, the Report-an-Issue button on the
-  About modal pings `/api/ping` and opens a hosted GitHub-issue form
-  at `report.knivesonstrings.com`. First launch shows a mandatory
-  privacy slide at the end of the onboarding tour with the option to
-  opt out. Opt-out is also available any time via Settings → Privacy.
-  All telemetry events are keyed by an anonymous per-install UUID with
-  no personal data. 
+- **Closing XCent no longer crashes at the very end.** Shutting the Standalone
+  window — or a DAW quitting with XCent loaded — could end in a crash report
+  after everything had already been saved. Nothing was lost when it happened, but
+  Windows logged an application error and some hosts reported it back to you on
+  the next launch. XCent's preferences store (your theme, UI scale, tour
+  progress, privacy choice) was being taken down after the framework it relies
+  on had already gone; it is now written out and released while the framework is
+  still up.
+- 
 
 - **macOS uninstaller (`uninstall.sh`)** — DMG now ships an
   `uninstall.sh` script that cleanly removes all four plugin bundles
