@@ -13,6 +13,102 @@
   on had already gone; it is now written out and released while the framework is
   still up.
 - 
+- **A factory patch reopened with a project no longer shows the modified
+  indicator.** Save a project sitting on any of the 100/200/300/400 factory
+  banks, reopen it, and XCent marked the voice as edited even though you had
+  changed nothing — so the LCD showed the modified state and Recall Edit looked
+  meaningful when there was nothing to recall. Untouched factory patches now come
+  back clean; a slot whose contents really did change under the project is still
+  flagged, exactly as before.
+- 
+
+## v0.15.17 — 2026-09-07 — Headless processor tests; settings-directory and telemetry overrides
+
+### Changes
+
+- **Two new environment variables, for anyone who wants XCent's files somewhere
+  else or telemetry off for one launch.** `XCENT_SETTINGS_DIR` (an absolute
+  path) relocates everything XCent writes for you — the patch library, your
+  preferences and the debug log — away from `Documents/KnivesOnStrings/XCent`;
+  useful for a portable install, a second profile, or keeping a test run out of
+  your real data. `XCENT_TELEMETRY_DISABLED=1` switches telemetry off for that
+  launch: no worker thread is started and nothing is sent, whatever the in-app
+  setting says. Both are additions — the in-app Privacy opt-out is unchanged and
+  still the normal way to turn telemetry off.
+- 
+- 
+
+## v0.15.16 — 2026-09-06 — CLAP: host is told to rescan parameter values after a project load
+
+### Fixes
+
+- **CLAP hosts now refresh the plugin's parameter values after loading a
+  project; before, the values were restored correctly but the host could
+  keep showing the old ones.** 
+- 
+
+## v0.15.15 — 2026-09-06 — Load watchdog measured from the host attach, not from construction
+
+### Fixes
+
+- **In hosts that build the plugin window well before showing it, the editor
+  could replace a working UI with the "user-interface layer did not signal
+  ready" panel about 8 seconds after construction.** The watchdog now starts
+  when the host actually attaches the window instead.
+
+- 
+
+## v0.15.14 — 2026-09-06 — WebView2 white-box-on-open fix for VST3 hosts
+
+### Fixes
+
+- **Opening the plugin in a VST3 host could show a solid white window instead of
+  the UI**, until the window was resized. XCent's editor is not resizable, so for
+  an affected user there was no way out of it. The editor now re-asserts the web
+  view the moment the host window attaches, and retries briefly until the UI
+  reports that it is ready.
+
+## v0.15.13 — 2026-09-06 — Built on JUCE 9.0.1; render tests compare against tracked references
+
+### Changes
+
+- **Framework upgraded to JUCE 9.0.1** (from 8.0.12). No audible change: every
+  harness render, including the three golden references, is byte-identical to
+  the JUCE 8 build of the same code, and pluginval strictness 10 passes in both
+  modes. Saved projects keep loading (plugin identifiers unchanged).
+
+- 
+
+## v0.15.12 — 2026-09-05 — Loads in Steinberg-loader hosts (delay-loaded NukedOPP.dll); tech-debt pass
+
+### Fixes
+
+- **Windows: XCent now loads in hosts that use Steinberg's module loader
+  (Cubase / Nuendo plugin-guard, pluginval's VST3 validator).** Since 0.15.x the
+  Nuked-OPP chip emulation ships as a separate `NukedOPP.dll` beside the plugin
+  so the LGPL relink right is real. Hosts whose loader does not search the
+  plugin's own folder could not find that DLL and refused to load the plugin at
+  all. The DLL is now delay-loaded and bound from the plugin's own directory
+  before first use; if it is ever missing, the plugin still loads, stays silent
+  and shows an explanation panel instead of failing or crashing.
+
+- 
+
+## v0.15.11 — 2026-05-17 — Network feature on by default; user-preferences consolidation; macOS uninstaller
+
+### Features
+
+- **Anonymous opt-out telemetry + in-plugin issue reporter are now
+  on by default.** The kos-worker Cloudflare backend (api.knivesonstrings.com)
+  is live, so the soft-launch gate on `XCENT_NETWORK_ENABLED` is removed
+  and default builds compile in the full feature: anonymous session
+  events POST to `/api/telemetry`, the Report-an-Issue button on the
+  About modal pings `/api/ping` and opens a hosted GitHub-issue form
+  at `report.knivesonstrings.com`. First launch shows a mandatory
+  privacy slide at the end of the onboarding tour with the option to
+  opt out. Opt-out is also available any time via Settings → Privacy.
+  All telemetry events are keyed by an anonymous per-install UUID with
+  no personal data. 
 
 - **macOS uninstaller (`uninstall.sh`)** — DMG now ships an
   `uninstall.sh` script that cleanly removes all four plugin bundles
