@@ -1,5 +1,186 @@
 # XCent Changelog
 
+## v0.15.21 — 2026-09-16 — Built on JUCE 9.0.2
+
+### Changes
+
+- **Framework updated to JUCE 9.0.2** (from 9.0.1). Nothing about how XCent
+  sounds, looks or behaves changes: every render the test suite compares against
+  its tracked reference is unchanged, the fallback screens still draw in the
+  bundled Roboto Mono, and the plugin passes the same validation as before in
+  every format. Saved projects keep loading (plugin identifiers unchanged).
+
+- **Two third-party licence texts refreshed.** JUCE 9.0.2 ships the FLAC and Ogg
+  Vorbis licences without the explanatory preamble JUCE used to place above them,
+  so XCent's copies match their source again. The licence terms are unchanged:
+  both still carry the Xiph copyright lines and their BSD text.
+
+- **House style: the company name is written "Knives on Strings", lowercase
+  "on".** Prose across the repo — the EULA, the third-party notices, the
+  manual, the README, the installer's displayed strings and the in-app About
+  box — now spells it consistently. Identifiers were already correct and are
+  unchanged: `COMPANY_NAME`, the `com.knivesonstrings.xcent` bundle/CLAP IDs,
+  `PLUGIN_MANUFACTURER_CODE KnoS`, and the spaceless `KnivesOnStrings`
+  settings folder that `Documents/KnivesOnStrings/XCent` lives under.
+
+- **Two shipped documents now describe the real product.** The manual's "User
+  Data Location" section gives the folder XCent actually uses on every
+  platform — `KnivesOnStrings/XCent` inside your Documents folder, including
+  when Documents is redirected into OneDrive — instead of invented
+  per-platform paths for macOS and Linux, and no longer says Settings can move
+  it, because it cannot; the one way to relocate the data is the
+  `XCENT_SETTINGS_DIR` environment variable, which the section now explains.
+  The readme that goes into a release package no longer calls XCent
+  MIT-licensed or open source — it is a commercial product with an end user
+  licence agreement — no longer says it runs Yamaha's ROM firmware, which it
+  neither ships, bundles nor downloads, and names the FM engine, the package
+  contents and the public repository correctly.
+
+- **The manual describes the right product, and its factory-voice counts add
+  up.** The overview no longer says XCent runs Yamaha's ROM firmware — it does
+  not, and it never ships, bundles or downloads one — and instead describes the
+  hardware signal chain XCent actually models. The bank description now
+  accounts for every voice: all 192 factory voices load, 96 filling the four
+  read-only ROM banks and the other 96 arriving pre-loaded in the four writable
+  RAM banks, which start full rather than empty. A new note explains why a bank
+  dump holds 32 voices where a bank holds 24.
+
+- **README's front page and the manual's install steps now match the
+  product too.** README still claimed XCent "runs actual DX100 ROM firmware
+  ... for 100% accurate" voice handling, restated again in its architecture
+  diagram and source-layout table — the same claim two other shipped
+  documents lost on 2026-09-16, but the scan behind that fix never reached
+  this one. It now says what actually runs: MIDI turned into chip register
+  writes the way the firmware does. The manual's version stamp is current
+  again, and its Windows, macOS, and Linux download/install steps name the
+  installer, package, and tarball by pattern instead of a frozen
+  `0.14.0-rc1`, with the Windows and Linux manual-install commands corrected
+  to the paths their own packaging actually produces and the macOS steps
+  naming the `.dmg` it actually ships instead of a zip that never existed.
+
+- **Two more stale customer-facing facts corrected.** The Linux installer's
+  closing line sent users to the private development repository for
+  support; it now points at the public one, matching the About box and
+  README's own Links section. README.md's version badge, test-count badge,
+  "Current version" line and quoted gate figures had fallen a release
+  behind; all four now read 0.15.21 and today's measured counts, with a new
+  Recent Updates entry for the JUCE 9.0.2 move.
+
+- **README's last two stale test figures closed out.** The Tests section's
+  "Currently known failures" list still named four tests that no longer
+  fail, and the Source Layout tree quoted a test count several releases old.
+  Both now read today's gate: 608 cases, 606 passed, 1 skipped, 1 expected
+  failure.
+
+- **macOS: the plugins and the Standalone now load on Macs other than the one
+  that built them.** macOS builds up to now — VST3, CLAP, Audio Unit, LV2
+  and the Standalone app — looked for their FM engine library in the
+  developer's build folder instead of inside their own bundles, so on any other
+  Mac the host refused to load the plugin and the app would not open
+  ("Library not loaded: @rpath/libNukedOPP.dylib"). Each format now finds the
+  copy it carries. Windows is unaffected.
+
+- **macOS installer: signed and notarized.** The macOS
+  package build can now sign every plugin format and the Standalone app with an
+  Apple Developer ID certificate, sign the installer package, and have Apple
+  notarize both the installer and the disk image, so a finished release opens
+  without a Gatekeeper security warning. The disk image's read-me no longer
+  shows a stray Chinese character where an arrow was meant, and it only
+  explains how to get past the security warning when the installer is not
+  notarized. The installer also always puts each format in its standard folder,
+  even when another copy of XCent exists elsewhere on the Mac. No notarized
+  build has been published yet.
+
+- **macOS: XCent now runs natively on Intel Macs as well as Apple Silicon.**
+  Every macOS format — VST3, CLAP, Audio Unit, LV2 and the Standalone app — is
+  now a universal binary. Until now the Mac builds only contained Apple Silicon
+  code, yet the installer still offered to install on Intel Macs, where nothing
+  would load. The installer now also checks that it can run on the Mac it is
+  opened on before installing anything.
+
+- **macOS 15 Sequoia or later is now required** (was macOS 10.15 Catalina).
+  The installer refuses to install on older versions of macOS.
+
+- **The user manual in the macOS disk image always matches the release.** The
+  Mac package could carry a manual printed from an earlier version of the text:
+  a test build today still said the Mac version needs macOS 11 or later. The
+  manual is now printed fresh every time a package is built, and a package can
+  no longer be built without it, on macOS or Windows.
+
+- **README's bank and patch counts now match the code.** The Sound
+  Management section said "4 banks x 8 patches" with per-bank storage
+  "(A-D factory, U1-U4 user)" -- wrong on every count, and naming four RAM
+  banks that do not exist. It now says 8 banks of 24 voices each, names the
+  four read-only ROM banks and four writable RAM banks the code actually
+  has, and states that the RAM banks arrive pre-loaded rather than empty.
+
+- **The published release notes no longer carry the development suite's
+  internal detail.** Three entries in these notes had their proof tails --
+  test file names, test-runner figures, internal binary names -- written
+  outside the markers that keep such detail out of the public changelog, so
+  the notes sent to beta testers published them verbatim. All three now end
+  at the sentence that tells a reader what changed, and a standing check
+  keeps it that way.
+
+- **The manual no longer offers a macOS install route that does not exist.**
+  Its "macOS (manual)" steps had you copy `XCent.vst3`, `XCent.clap`,
+  `XCent.component` and `XCent.app` out of a `plugins/` folder -- a folder no
+  macOS download has ever contained. What macOS ships is one disk image holding
+  one installer package, and the manual now says so: the installer places the
+  formats system-wide, in the four locations it already listed, you pick which
+  formats go in while it runs, and a per-user install under
+  `~/Library/Audio/Plug-Ins/` is not offered in this release. The genuinely
+  useful part is kept, attached to where it actually applies -- if a DAW does
+  not see XCent after installing, the disk image's `clear-quarantine.sh` clears
+  the quarantine flag from every location XCent installs to and refreshes the
+  AU cache -- and the disk image's own readme now says that in the same terms
+  instead of offering a hand-copy first. Whether macOS should get a manual or
+  per-user install route at all is written down as an open decision rather than
+  left implied by instructions that did not work.
+## v0.15.20 — 2026-09-16 — All fonts bundled; complete third-party licence texts; About box shows the real version
+
+### Fixes
+
+- **The interface now always renders in its intended typefaces.** Every font
+  the interface draws with now ships inside XCent. Before, a computer without
+  Roboto Mono installed showed most of the interface in Courier New, and
+  symbols such as the favourite star, the undo and redo arrows, the
+  patch-navigation arrows, the padlock on ROM banks and the scope's play and
+  freeze marks came from whatever symbol or emoji fonts the operating system
+  had. The fonts are bundled now and those symbols are drawn as vector icons,
+  so the interface looks the same on every machine.
+- **The fallback screens use the interface's font.** The screens XCent shows
+  in place of its interface when the interface cannot start (WebView2 missing,
+  the interface failing to load, or the chip-emulation library missing) now
+  draw their text and buttons in the same Roboto Mono as the interface instead
+  of the operating system's default font.
+- **The manual PDF no longer depends on the build machine's fonts.** The
+  arrows, patch-navigation pointers and the star, gear, clock and keyboard
+  symbols in the manual are drawn as vector icons, so the PDF contains only
+  XCent's own fonts.
+- **The licence texts now come with XCent on Windows.** The installer and the
+  zip include XCent's licence, the third-party notices and the full third-party
+  licence texts — among them the SIL Open Font License of the bundled fonts —
+  as the macOS disk image already did. The installer puts them next to the
+  Standalone app.
+- **Complete third-party licence texts.** The third-party notices now cover
+  every third-party component built into XCent, and every XCent download
+  includes the licence texts those components call for — among them those of
+  HarfBuzz, SheenBidi, LunaSVG, FLAC, Ogg Vorbis, the CLAP SDK and Microsoft's
+  WebView2 SDK.
+- **The About box now shows the plugin's real version.** Since 0.15.12 it had
+  shown "v0.15.11" — a frozen build-counter artifact — no matter what version
+  was actually installed. It now reads the same version number as everywhere
+  else in XCent.
+
+## v0.15.19 — 2026-09-08 — Sanitizer-clean test suite; emulator table-read mask
+
+### Fixes
+
+- **No audible change.** An out-of-bounds table read in the chip emulator
+  that only the test harness could trigger is now masked; every render
+  fingerprint and reference comparison is unchanged.
+
 ## v0.15.18 — 2026-09-07 — Crash on quit fixed; factory patches no longer flagged modified after a project reload
 
 ### Fixes
@@ -12,7 +193,6 @@
   progress, privacy choice) was being taken down after the framework it relies
   on had already gone; it is now written out and released while the framework is
   still up.
-- 
 - **A factory patch reopened with a project no longer shows the modified
   indicator.** Save a project sitting on any of the 100/200/300/400 factory
   banks, reopen it, and XCent marked the voice as edited even though you had
@@ -20,7 +200,6 @@
   meaningful when there was nothing to recall. Untouched factory patches now come
   back clean; a slot whose contents really did change under the project is still
   flagged, exactly as before.
-- 
 
 ## v0.15.17 — 2026-09-07 — Headless processor tests; settings-directory and telemetry overrides
 
@@ -35,8 +214,6 @@
   launch: no worker thread is started and nothing is sent, whatever the in-app
   setting says. Both are additions — the in-app Privacy opt-out is unchanged and
   still the normal way to turn telemetry off.
-- 
-- 
 
 ## v0.15.16 — 2026-09-06 — CLAP: host is told to rescan parameter values after a project load
 
@@ -45,7 +222,6 @@
 - **CLAP hosts now refresh the plugin's parameter values after loading a
   project; before, the values were restored correctly but the host could
   keep showing the old ones.** 
-- 
 
 ## v0.15.15 — 2026-09-06 — Load watchdog measured from the host attach, not from construction
 
@@ -55,8 +231,6 @@
   could replace a working UI with the "user-interface layer did not signal
   ready" panel about 8 seconds after construction.** The watchdog now starts
   when the host actually attaches the window instead.
-
-- 
 
 ## v0.15.14 — 2026-09-06 — WebView2 white-box-on-open fix for VST3 hosts
 
@@ -77,8 +251,6 @@
   the JUCE 8 build of the same code, and pluginval strictness 10 passes in both
   modes. Saved projects keep loading (plugin identifiers unchanged).
 
-- 
-
 ## v0.15.12 — 2026-09-05 — Loads in Steinberg-loader hosts (delay-loaded NukedOPP.dll); tech-debt pass
 
 ### Fixes
@@ -91,8 +263,6 @@
   all. The DLL is now delay-loaded and bound from the plugin's own directory
   before first use; if it is ever missing, the plugin still loads, stays silent
   and shows an explanation panel instead of failing or crashing.
-
-- 
 
 ## v0.15.11 — 2026-05-17 — Network feature on by default; user-preferences consolidation; macOS uninstaller
 
