@@ -1,6 +1,6 @@
 # XCent User Manual
 
-**Version 0.14.0-rc1** — May 2026
+**Version 0.15.21** — September 2026
 
 ---
 
@@ -23,9 +23,9 @@
 
 ## Introduction
 
-XCent is a circuit-faithful emulation of the Yamaha DX100 — a four-operator FM synthesizer built around Yamaha's YM2164 OPP chip. It runs the actual DX100 ROM firmware on an HD6303 CPU emulator for 100% accurate voice allocation and parameter handling. The FM engine operates at the chip's native 55,930 Hz sample rate, resamples to your host's rate, and emulates the hardware's DAC quantization, aliasing characteristics, and reconstruction filter behavior.
+XCent is a circuit-faithful emulation of the Yamaha DX100 — a four-operator FM synthesizer built around Yamaha's YM2164 OPP chip. It models the hardware's whole signal chain: incoming MIDI is turned into chip register writes the way the original's firmware does, a cycle-accurate YM2164 emulation generates the audio, and that passes through models of the hardware's DAC and analog output stage. The FM engine operates at the chip's native 55,930 Hz sample rate, resamples to your host's rate, and emulates the hardware's DAC quantization, aliasing characteristics, and reconstruction filter behavior.
 
-XCent ships with the 192 factory voices from the original DX100 ROM, organized into four read-only ROM banks (100, 200, 300, 400) of 24 voices each. Four writable RAM banks (A, B, C, D) are available for your own patches. All eight FM algorithms are supported, with full four-operator control and OP4 self-feedback.
+XCent ships with the 192 factory voices from the original DX100 ROM, 24 per bank. 96 factory voices fill the four read-only ROM banks (100, 200, 300, 400); the other 96 factory voices arrive pre-loaded in the four writable RAM banks (A, B, C, D), where you can play them as they are or save your own patches over them. All eight FM algorithms are supported, with full four-operator control and OP4 self-feedback.
 
 The interface provides three operating modes matching the DX100 hardware:
 
@@ -43,42 +43,62 @@ This manual covers XCent-specific operation: installation, the interface, patch 
 
 | | |
 |---|---|
-| **Platforms** | Windows 10+, macOS 11+, iOS/iPadOS 16+, Linux (x86-64) |
-| **Formats** | VST3, CLAP, Standalone (desktop); AUv3, Standalone (iOS/iPadOS) |
-| **CPU** | Any modern x86-64 processor (desktop) or Apple Silicon/A-series (iOS). The DSP runs at native hardware rate (55,930 Hz) — allow for that in dense sessions. |
+| **Platforms** | Windows 10 or later (64-bit); macOS 15 Sequoia or later (Apple Silicon or Intel) |
+| **Formats** | VST3, CLAP, Standalone (Windows); VST3, CLAP, AU, Standalone (macOS) |
+| **CPU** | Any modern x86-64 processor (Windows), Apple Silicon or Intel (macOS). The DSP runs at native hardware rate (55,930 Hz) — allow for that in dense sessions. |
 | **RAM** | Minimal. Factory library is ROM-sourced and loaded on first use. |
 
 ### Installation
 
 **Windows (recommended — installer):**
 
-Download `XCent-Setup-0.14.0-rc1.exe` and run it. The installer:
+Download the `XCent-Setup-<version>.exe` installer (currently `XCent-Setup-0.15.21.exe`) and run it. The installer:
 - Places VST3, CLAP, and Standalone in their standard system folders automatically
 - Installs the Microsoft Edge WebView2 runtime if it isn't already present
 - Adds an entry to Add/Remove Programs for clean uninstallation
 - Clears any stale WebView2 cache from previous installs
 
 **Windows (manual):**
+
+From the extracted zip:
+
 ```powershell
 # VST3 — copy the entire XCent.vst3 folder
-Copy-Item "XCent.vst3" -Destination "$env:ProgramFiles\Common Files\VST3" -Recurse
+Copy-Item "plugins\VST3\XCent.vst3" -Destination "$env:ProgramFiles\Common Files\VST3" -Recurse
 
-# CLAP
-Copy-Item "XCent.clap" -Destination "$env:ProgramFiles\Common Files\CLAP"
+# CLAP — NukedOPP.dll must stay next to XCent.clap; the plugin loads its chip
+# emulator from its own folder and is silent without it
+Copy-Item "plugins\CLAP\XCent.clap" -Destination "$env:ProgramFiles\Common Files\CLAP"
+Copy-Item "plugins\CLAP\NukedOPP.dll" -Destination "$env:ProgramFiles\Common Files\CLAP"
 ```
 
 If you install manually, you may need to install the [Microsoft Edge WebView2 runtime](https://developer.microsoft.com/microsoft-edge/webview2/) separately.
 
-**macOS (recommended — installer):**
+**macOS (installer):**
 
-Download `XCent-0.14.0-rc1-macos.zip`, extract it, and double-click `XCent-0.14.0-macos.pkg`. The installer lets you choose which formats to install:
+XCent requires macOS 15 Sequoia or later; the installer refuses to run on older versions. It runs natively on both Apple Silicon and Intel Macs.
+
+Download `XCent-<version>-macos.dmg` (currently `XCent-0.15.21-macos.dmg`), open it, and double-click the `.pkg` inside. The installer lets you choose which formats to install:
 
 - **VST3** → `/Library/Audio/Plug-Ins/VST3/` (system-wide, visible to all DAWs)
 - **CLAP** → `/Library/Audio/Plug-Ins/CLAP/`
 - **AU (Audio Unit)** → `/Library/Audio/Plug-Ins/Components/`
 - **Standalone** → `/Applications/`
 
-> **Gatekeeper notice (early releases):** Until XCent is distributed with a Developer ID certificate, macOS will block the installer and plugins with a security warning. To proceed:
+The installer is the supported way to install XCent on macOS. It places the
+formats system-wide, in the locations above, and there is no separate archive of
+loose plugin bundles to copy into place by hand; a per-user install under
+`~/Library/Audio/Plug-Ins/` is not offered in this release.
+
+> **Gatekeeper (the macOS security warning):** Whether you see one depends on
+> the copy you have. A release signed with an Apple Developer ID certificate and
+> notarized by Apple opens with no warning at all. A copy that has not been
+> notarized is blocked the first time you open it, and has to be allowed through
+> by hand. The `README.rtf` on the disk image tells you which of the two you
+> have: it is written when that image is built, from the notarization state of
+> the installer inside it.
+>
+> If your copy is blocked:
 >
 > 1. When the warning appears, click **OK** to dismiss it.
 > 2. Open **System Settings → Privacy & Security**.
@@ -86,100 +106,70 @@ Download `XCent-0.14.0-rc1-macos.zip`, extract it, and double-click `XCent-0.14.
 > 4. Click **Open Anyway**, then confirm in the dialog that follows.
 >
 > You may need to do this once for the installer and once for each plugin format the first time your DAW loads it. This is a one-time step per format.
->
-> If you're on macOS 13 Ventura or earlier, the setting is in **System Preferences → Security & Privacy → General**.
 
-**macOS (manual):**
+**macOS (if your DAW doesn't see XCent):**
 
-Extract the zip and copy the plugin formats yourself:
-
-```bash
-# VST3
-cp -r "plugins/VST3/XCent.vst3" ~/Library/Audio/Plug-Ins/VST3/
-
-# CLAP
-cp -r "plugins/CLAP/XCent.clap" ~/Library/Audio/Plug-Ins/CLAP/
-
-# AU
-cp -r "plugins/AU/XCent.component" ~/Library/Audio/Plug-Ins/Components/
-
-# Standalone
-cp -r "plugins/Standalone/XCent.app" /Applications/
-```
-
-If macOS quarantines the copied files, run the included helper script (it also refreshes the AU cache automatically):
+macOS marks files it has downloaded as quarantined, which can stop a DAW from
+loading a plugin. The disk image carries a `clear-quarantine.sh` script for that
+case: it clears the quarantine flag from every location XCent installs to, and
+refreshes the AU cache. Mount the disk image, open Terminal in the mounted
+volume, and run:
 
 ```bash
 bash clear-quarantine.sh
 ```
 
-Or clear the quarantine flag manually:
+**macOS uninstall:**
+
+The DMG ships an `uninstall.sh` script alongside the `.pkg`. Mount the
+DMG, open Terminal in the mounted volume, and run:
 
 ```bash
-xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/XCent.vst3
-xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/XCent.clap
-xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/XCent.component
-xattr -dr com.apple.quarantine /Applications/XCent.app
+./uninstall.sh                  # remove plugins + Standalone (keep user data)
+./uninstall.sh --purge          # also remove ~/Documents/KnivesOnStrings/XCent/
+./uninstall.sh --dry-run        # preview what would be removed
+./uninstall.sh --yes            # skip confirmation prompt
 ```
 
-**Linux (recommended — installer):**
+The script removes the four installed components from
+`/Library/Audio/Plug-Ins/{VST3,CLAP,Components}/` and `/Applications/`,
+forgets the `pkgutil` receipts, and refreshes the AU cache. Your user
+banks, preferences, and logs (under `~/Documents/KnivesOnStrings/XCent/`)
+are preserved by default — pass `--purge` to remove those too.
 
-Download `XCent-0.14.0-rc1-linux-x86_64.tar.gz`, extract it, and run
-`install.sh`:
+If you no longer have the DMG, the same removal can be done manually:
 
 ```bash
-tar -xzf XCent-0.14.0-rc1-linux-x86_64.tar.gz
-cd XCent-0.14.0-rc1-linux-x86_64
-./install.sh                # per-user install (default)
-./install.sh --system       # system-wide install (requires sudo)
-./install.sh --uninstall    # remove a previous install
+sudo rm -rf "/Library/Audio/Plug-Ins/VST3/XCent.vst3"
+sudo rm -rf "/Library/Audio/Plug-Ins/CLAP/XCent.clap"
+sudo rm -rf "/Library/Audio/Plug-Ins/Components/XCent.component"
+sudo rm -rf "/Applications/XCent.app"
+sudo pkgutil --forget com.knivesonstrings.xcent.vst3
+sudo pkgutil --forget com.knivesonstrings.xcent.clap
+sudo pkgutil --forget com.knivesonstrings.xcent.au
+sudo pkgutil --forget com.knivesonstrings.xcent.standalone
+killall -9 AudioComponentRegistrar 2>/dev/null || true
 ```
-
-The installer places:
-
-- **Per-user (default)** — VST3 in `~/.vst3/`, CLAP in `~/.clap/`,
-  LV2 in `~/.lv2/`, Standalone in `~/.local/bin/`.
-- **System-wide (`--system`)** — VST3 / CLAP / LV2 under `/usr/lib/`,
-  Standalone in `/usr/local/bin/`.
-
-It also copies the LGPL-2.1 `NOTICES.txt` file alongside the binaries
-so the LGPL component (Nuked-OPP) carries its required attribution at
-the install site.
-
-**Linux (manual):**
-
-If you'd rather not run a script, the bundle's contents can be copied
-manually:
-
-```bash
-# VST3 — copy the entire XCent.vst3 folder
-cp -r plugins/VST3/XCent.vst3 ~/.vst3/
-
-# CLAP
-cp plugins/CLAP/XCent.clap ~/.clap/
-
-# LV2 — copy the entire XCent.lv2 folder
-cp -r plugins/LV2/XCent.lv2 ~/.lv2/
-
-# Standalone
-cp plugins/Standalone/XCent ~/.local/bin/
-```
-
-If you choose the manual route, also copy `NOTICES.txt` somewhere
-discoverable (e.g. `~/.local/share/doc/xcent/`) so the LGPL attribution
-is preserved.
-
-**iOS/iPadOS:** Install via the App Store or TestFlight (beta).
 
 ### User Data Location
 
-After installation, XCent's factory library and preferences are stored in:
+Everything XCent writes for you lives in one folder inside your Documents
+folder: the patch library (`Library`), your preferences, and the log file.
+The path is the same on Windows and macOS:
 
 - **Windows:** `Documents\KnivesOnStrings\XCent`
-- **macOS:** `~/Library/Application Support/Knives On Strings/XCent`
-- **Linux:** `~/.config/KnivesOnStrings/XCent`
+- **macOS:** `~/Documents/KnivesOnStrings/XCent`
 
-The library folder location is configurable via Settings.
+On Windows, that is wherever Windows currently keeps your Documents folder. If
+Documents is redirected into OneDrive — as it is on many PCs — XCent's folder
+goes with it, at `OneDrive\Documents\KnivesOnStrings\XCent`. To see the folder
+itself, use **Settings → Sound → User Patches Folder → Browse**, which opens
+the `Library` folder inside it in your file manager.
+
+The location is fixed — Settings does not move it. To put XCent's data
+somewhere else (a portable install, or a second profile), set the
+`XCENT_SETTINGS_DIR` environment variable to an absolute path before launching
+your DAW or the Standalone app; XCent then uses that folder for all of it.
 
 ---
 
@@ -486,7 +476,6 @@ Theme changes apply immediately to an open scope window and persist across plugi
 
 - Minimum 500 × 360 pixels; default 720 × 500; resizable.
 - Position and size persist across plugin sessions.
-- On iOS, Scope opens as a fullscreen sheet (coming in a future update).
 
 ### Render Mode
 
@@ -521,7 +510,7 @@ XCent has two types of banks:
 
 - **ROM banks (100, 200, 300, 400):** 96 original DX100 factory voices, read-only. These match the hardware's factory ROM exactly. Patch slots are numbered in the DX100 style: bank 100 contains patches 101–124, bank 200 contains 201–224, and so on.
 
-- **RAM banks (A, B, C, D):** 96 writable slots for your own patches (24 per bank). Patch slots are displayed as A 1–A24, B 1–B24, etc. RAM bank contents are automatically saved to disk when changed.
+- **RAM banks (A, B, C, D):** 96 writable slots for your own patches (24 per bank), pre-loaded with the other 96 factory voices so no slot starts empty — save over any slot to make it yours. Patch slots are displayed as A 1–A24, B 1–B24, etc. RAM bank contents are automatically saved to disk when changed.
 
 ### Saving a Patch
 
@@ -564,6 +553,8 @@ XCent is compatible with standard DX100 SysEx formats:
 **Export:**
 - **Single voice (VCED)** — Right-click patch → **Export SysEx** → saves as `.syx` file
 - **Bank (VMEM)** — Right-click bank header → **Export Bank** → saves 32 voices as `.syx`
+
+A DX100 bank dump always carries 32 voices while a bank holds 24: XCent pads the extra eight with initialized voices on export, and discards them on import, as the hardware does.
 
 **Import:**
 - Drag `.syx` file onto patch browser
@@ -682,7 +673,7 @@ Click the **⚙** icon in the top bar to open Settings. Three tabs:
 | Setting | Description |
 |---------|-------------|
 | **Engine Mode** | **Vintage** (authentic — includes YM3014 DAC + NJM072D analog filter) or **Modern** (clean — bypasses analog stage for alias-free FM). |
-| **User Patches Folder** | Location where RAM banks are stored. Default: platform-specific (see [Installation](#user-data-location)). Click **Browse** to move it to a custom location (e.g., shared drive, project folder). |
+| **User Patches Folder** | Click **Browse** to open the folder where your RAM banks and imported banks are stored (see [User Data Location](#user-data-location)). The location is fixed; only the `XCENT_SETTINGS_DIR` environment variable changes it. |
 
 ### Appearance
 
@@ -822,8 +813,8 @@ Four sine waves (no modulation). Pure additive synthesis. Useful for organs, sim
 
 ### Keyboard Shortcuts
 
-| Action | Windows/Linux | macOS |
-|--------|---------------|-------|
+| Action | Windows | macOS |
+|--------|---------|-------|
 | **Undo** | Ctrl+Z | Cmd+Z |
 | **Redo** | Ctrl+Y or Ctrl+Shift+Z | Cmd+Shift+Z |
 | **Save Patch** | Ctrl+S | Cmd+S |
@@ -837,7 +828,7 @@ Four sine waves (no modulation). Pure additive synthesis. Useful for organs, sim
 
 ### Known Issues
 
-See [`bugs.md`](https://github.com/Knives-On-Strings/xcent/blob/main/bugs.md) in the repository for current known issues and workarounds.
+Search [GitHub Issues](https://github.com/Knives-On-Strings/xcent/issues) for known issues and workarounds before reporting a new one.
 
 ### Support
 
@@ -846,8 +837,6 @@ See [`bugs.md`](https://github.com/Knives-On-Strings/xcent/blob/main/bugs.md) in
 **General questions:** [knivesonstrings@gmail.com](mailto:knivesonstrings@gmail.com)
 
 **Website:** [knivesonstrings.com/xcent](https://knivesonstrings.com/xcent)
-
-**Source code:** [github.com/Knives-On-Strings/xcent](https://github.com/Knives-On-Strings/xcent)
 
 ### Trademarks & Attribution
 
@@ -865,8 +854,8 @@ See [`bugs.md`](https://github.com/Knives-On-Strings/xcent/blob/main/bugs.md) in
 
 XCent's compiled binary statically links the following open-source libraries:
 
-- **Nuked-OPP** — Cycle-accurate YM2164 (OPP) emulator. A modified fork of Nuke.YKT's Nuked-OPM with DX100-specific behavioural tweaks and renamed symbols. Original © 2020, 2026 Nuke.YKT; modifications © Knives On Strings. Licensed under the GNU Lesser General Public License version 2.1 (LGPL-2.1-or-later). Modified source available at the Knives On Strings public GitHub organization (URL in `NOTICES.txt`) and on request via [knivesonstrings@gmail.com](mailto:knivesonstrings@gmail.com).
-- **JUCE 8** — Cross-platform audio plugin framework. © Raw Material Software Limited. Used under the JUCE 8 commercial license.
+- **Nuked-OPP** — Cycle-accurate YM2164 (OPP) emulator. A modified fork of Nuke.YKT's Nuked-OPM with DX100-specific behavioural tweaks and renamed symbols. Original © 2020, 2026 Nuke.YKT; modifications © Knives on Strings. Licensed under the GNU Lesser General Public License version 2.1 (LGPL-2.1-or-later). Modified source available at the Knives on Strings public GitHub organization (URL in `NOTICES.txt`) and on request via [knivesonstrings@gmail.com](mailto:knivesonstrings@gmail.com).
+- **JUCE 9** — Cross-platform audio plugin framework. © Raw Material Software Limited. Used under the JUCE 9 license, not under the AGPLv3.
 - **clap-juce-extensions** — CLAP format support for JUCE. © 2019–2020 Paul Walker. MIT License.
 - **VST3 SDK** — © Steinberg Media Technologies GmbH. Used under MIT License (via JUCE).
 - **React** + **React DOM** — © Meta Platforms. MIT License.
@@ -878,11 +867,11 @@ Acknowledged as an upstream reference but **not** linked into the shipped produc
 
 - **Nuked-OPM** — Original YM2151 emulator by Nuke.YKT (LGPL-2.1-or-later). Used by the test suite as a verification baseline for Nuked-OPP.
 
-Full license texts are included in the installer as `NOTICES.txt`.
+The complete third-party notices are in `NOTICES.txt`, and the full license texts in the `licenses` folder beside it; both come with every XCent download.
 
 ---
 
-**XCent User Manual v0.15.1-rc2** — May 2026  
-© 2026 Knives On Strings. All rights reserved.
+**XCent User Manual v0.15.21** — September 2026  
+© 2026 Knives on Strings. All rights reserved.
 
 For the most up-to-date version of this manual, visit [knivesonstrings.com/xcent/manual](https://knivesonstrings.com/xcent/manual).

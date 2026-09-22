@@ -2,10 +2,10 @@
 
 **FM Synthesis** — The Yamaha DX100 emulation nobody asked for.
 
-- **Formats:** VST3, CLAP, AU, LV2 (desktop) · AUv3 (iOS/iPadOS)
-- **Platforms:** Windows, macOS, Linux, iOS/iPadOS
+- **Formats:** VST3, CLAP, Standalone (Windows) · VST3, CLAP, AU, Standalone (macOS)
+- **Platforms:** Windows 10 or later (64-bit), macOS 15 Sequoia or later (Apple Silicon or Intel)
 - **Status:** Beta
-- **Version:** 0.14.0-rc1
+- **Version:** 0.15.21
 
 ## Links
 
