@@ -5,7 +5,7 @@
 - **Formats:** VST3, CLAP, Standalone (Windows) · VST3, CLAP, AU, Standalone (macOS)
 - **Platforms:** Windows 10 or later (64-bit), macOS 15 Sequoia or later (Apple Silicon or Intel)
 - **Status:** Beta
-- **Version:** 0.15.21
+- **Version:** 0.15.44
 
 ## Links
 
