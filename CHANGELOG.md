@@ -3,6 +3,176 @@
 What's new, what's better and what's fixed in each version of XCent, newest
 first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 
+## v0.15.61 -- 2026-10-14
+
+### Improved
+
+- FB-01 velocity mode now responds as an FB-01 does: medium velocity
+  sounds as on the DX100, harder playing is louder and brighter, softer
+  playing quieter and darker.
+- FB-01 bank imports keep each operator's keyboard level scaling.
+
+### Fixed
+
+- TX81Z banks and single patches now load from, and send to, a real TX81Z
+  correctly. Operators 2 and 3 were swapped, and banks were cut to 16
+  voices.
+- Factory patches sent to a DX21, DX11 or TX81Z no longer carry a wrong
+  pitch envelope setting.
+- A library bank used by a RAM bank can no longer be deleted. A RAM bank
+  whose bank is missing gets its factory sounds back.
+
+## v0.15.60 -- 2026-10-13
+
+### Fixed
+
+- Single-voice SysEx files, and patches sent to XCent over MIDI, now load
+  with their own pitch bend range, poly/mono, portamento and foot volume
+  settings. Before, these were read in the wrong order.
+- XCent's single-voice exports now write these settings the way a DX100
+  reads them.
+- Bank files now load poly/mono, portamento mode and chorus correctly.
+  The factory patches Mono Bass, Mono Lead and Mono Sax now play mono,
+  with fingered portamento, as on the DX100.
+- Exported patches keep the foot switch set to sustain instead of
+  switching the sustain pedal off.
+- DX100 single-voice files are no longer mistaken for DX21 patches with
+  chorus switched on.
+- Projects saved with earlier versions keep their patch settings. A
+  project left on an unedited Mono Bass, Mono Lead or Mono Sax picks up
+  the corrected mono setting.
+
+## v0.15.59 -- 2026-10-13
+
+### Fixed
+
+- SysEx files you put in your Library folder are now imported the next
+  time XCent starts, instead of deleted. A message says how many were
+  imported, and your files are left as they are.
+- TX81Z single-voice exports can now be read back by XCent.
+- DX21 bank exports now keep each patch's chorus and foot volume settings.
+
+## v0.15.58 -- 2026-10-13
+
+### Fixed
+
+- Opening a SysEx bank file now imports the whole bank as a bank of its
+  own, named after the file. Before, only its first patch was kept.
+- Opening a SysEx file now tells you when it can't be read or holds no
+  patches XCent understands, and a bank with more than 24 patches says how
+  many were left out.
+- Bank actions tell you when they fail: new bank, rename, delete and
+  assigning a bank to a RAM bank. A bank received over MIDI that couldn't be
+  saved is reported too.
+- My Sounds no longer lists its empty slots.
+- A TX81Z single patch now imports as one patch with its own name.
+
+## v0.15.57 -- 2026-10-13
+
+### Fixed
+
+- Save As now tells you when it can't save, and no longer marks the patch
+  saved if it wasn't.
+- Save As waits until the patch is saved before it closes, and saves to My
+  Sounds straight away. Before, Save could do nothing until you picked a
+  destination.
+- Opening a single-patch SysEx file now tells you when it couldn't be added
+  to My Sounds, for example because My Sounds is full.
+
+## v0.15.56 -- 2026-10-12
+
+### New
+
+- Keyboard shortcuts: Ctrl+O (Cmd+O on the Mac) opens the patch browser,
+  Ctrl+K (Cmd+K) shows or hides the on-screen keyboard, the Left and Right
+  arrow keys step through patches, and F1, F2 and F3 press PLAY, EDIT and
+  FUNC.
+- The shortcuts stay out of the way while you type a name or a window or
+  menu is open, and the arrows while a knob or parameter is selected.
+
+### Fixed
+
+- Store in the patch browser no longer says a patch was saved when it could
+  not be. It is greyed out for factory banks and for the All patches view.
+- When a patch can't be stored, renamed, deleted or copied, XCent now tells
+  you why, for example that the bank is a protected factory bank.
+
+## v0.15.55 -- 2026-10-12
+
+### Fixed
+
+- Renaming, deleting and copying patches in your own library banks now works,
+  and the change is kept. Before, it looked done but the bank was unchanged.
+- Saving the current bank as a SysEx file now saves the library bank your
+  patch came from. Before, it saved factory bank 100 instead.
+- Cmd+S saves on the Mac, and Cmd+Shift+S opens Save As.
+- Redo with Ctrl+Shift+Z (Cmd+Shift+Z on the Mac) now works, and shortcuts
+  work with Caps Lock on.
+- The manual's list of keyboard shortcuts now shows only the ones that work.
+
+## v0.15.54 -- 2026-10-12
+
+### Fixed
+
+- Ctrl+S now really saves a patch back to your own library bank. Before, it
+  looked saved but the change was gone next time.
+- Saving, renaming or deleting a patch in RAM banks A to D now lasts. Before,
+  changes over the factory sounds there were lost when XCent closed.
+- Your first change to a RAM bank now copies it into a new bank of your own,
+  User Bank A (B, C, D), which keeps your changes. The factory sounds stay
+  untouched in the library.
+- A sound sent to XCent over MIDI is now kept even when XCent's window is
+  closed, so your project saves it. A bank sent over MIDI is kept in RAM
+  bank A for next time, window open or not.
+
+## v0.15.53 -- 2026-10-11
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.52 -- 2026-10-11
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.51 -- 2026-10-11
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.50 -- 2026-10-11
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.49 -- 2026-10-11
+
+### Fixed
+
+- Sending XCent a voice or a bank over MIDI while it plays no longer risks
+  a glitch or dropout in the audio.
+- Closing XCent's window while a file dialog is open is now safer.
+- On Windows, leftover interface data folders from older versions of XCent
+  are now cleaned up once nothing is using them.
+
+## v0.15.48 -- 2026-10-10
+
+### Fixed
+
+- On older Macs (macOS 10.15 to 11), some of XCent's knobs and switches could
+  move on screen without changing the sound. They now work on every macOS
+  version XCent supports.
+
+## v0.15.47 -- 2026-10-10
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.46 -- 2026-10-10 -- The whole window in Ableton Live
+
+### Fixed
+
+- In Ableton Live on Windows, with Auto-Scale Plug-In Window switched on and
+  the display set above 100 %, XCent's window showed only the top-left part
+  of the interface. It now shows all of it, at any interface size.
+- XCent now opens straight at your saved interface size, instead of opening
+  small and then jumping to it.
+
 ## v0.15.44 -- 2026-10-10 -- FB-01 sounds import correctly
 
 ### Improved
