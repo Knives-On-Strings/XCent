@@ -3,6 +3,127 @@
 What's new, what's better and what's fixed in each version of XCent, newest
 first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 
+ASIO is a trademark of Steinberg Media Technologies GmbH, registered in Europe
+and other countries.
+
+## v0.15.73 -- 2026-10-26
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.72 -- 2026-10-26
+
+### New
+
+- The DX100's factory sounds are grouped under their own heading in the browser.
+- MIDI CC11 (Expression) can now control the volume, the level of the carriers, the level of every operator, or nothing.
+
+### Improved
+
+- Pitch bend is smooth, as on the DX100, instead of moving in semitone steps.
+- The highest and lowest keys fold back by an octave, as they do on the DX100.
+- Editing a sound no longer changes the level of a note you are holding, as on the DX100; the next note takes the change.
+- Download files now follow one naming pattern on every platform: product, version, system and processor type.
+
+### Fixed
+
+- The browser's Favorites and Recent buttons switch off again with a second click.
+- If you have not agreed to share usage data, XCent keeps no identifier and deletes any it stored before.
+
+## v0.15.71 -- 2026-10-24
+
+### Improved
+
+- Privacy settings now have their own Privacy tab in Settings.
+
+## v0.15.70 -- 2026-10-24
+
+### Fixed
+
+- Sounds no longer change tone or level abruptly between C and C# as you
+  play up the keyboard. Key level scaling now changes a little every three
+  notes, exactly as on the DX100 and the DX21.
+
+## v0.15.69 -- 2026-10-23
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.68 -- 2026-10-23
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.67 -- 2026-10-23 -- FB-01 velocity mode retired
+
+### Improved
+
+- To play a factory sound the way the Yamaha FB-01 plays it, choose it from
+  the FB-01 section of the patch browser. Those sounds respond to how hard you
+  play exactly as on an FB-01.
+- Factory patches in banks 100 to 400 and A to D now always respond as on a
+  DX100. The FB-01 velocity mode setting is gone; if you had it on, these
+  patches now play as a DX100 plays them.
+- Projects saved with FB-01 velocity mode on open with the DX100 response.
+  Patches you saved into your own banks while it was on keep the response
+  they were saved with.
+
+## v0.15.66 -- 2026-10-23
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.65 -- 2026-10-23
+
+### New
+
+- The Yamaha FB-01's 240 factory sounds are now in the browser, in five
+  banks of their own.
+- XCent can tell you when an update is available. It checks weekly by
+  default, sends only the product name, and is set in Settings.
+
+### Improved
+
+- FB-01 sounds now play with the FB-01's own velocity and keyboard
+  response. Sounds you imported from an FB-01 earlier may sound louder,
+  especially sounds with several audible layers.
+
+### Fixed
+
+- A project saved on an FB-01 sound reopens on that sound.
+- A project saved on a library patch no longer reopens as modified.
+
+## v0.15.64 -- 2026-10-23
+
+### Improved
+
+- Importing a bank from an FB-01 now keeps all 48 voices, and 32-voice DX21 and
+  TX81Z banks keep all 32, instead of being cut short.
+- Mac: the installer now also installs the licence texts.
+- Each download now comes with a checksum file, so you can check it
+  arrived intact.
+
+## v0.15.63 -- 2026-10-23
+
+### New
+
+- The Windows Standalone supports ASIO audio devices again. Choose ASIO
+  as the driver type in Settings, then your audio interface.
+
+### Fixed
+
+- TX81Z mode no longer applies a pitch envelope. The TX81Z has none, so
+  a patch now plays at a steady pitch there, whatever its pitch envelope
+  settings.
+- A program change sent right after a bank over MIDI now plays the new
+  sound, not the one the bank replaced.
+- A second copy of a RAM bank now gets its own name ("User Bank A 2")
+  instead of repeating "User Bank A".
+
+## v0.15.62 -- 2026-10-14
+
+### Fixed
+
+- In DX21 and DX11 modes, the pitch envelope now keeps moving after you
+  release a key, as on the hardware, instead of stopping where it was. On
+  a DX11, lifting the sustain pedal starts it too.
+
 ## v0.15.61 -- 2026-10-14
 
 ### Improved
