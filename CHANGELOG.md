@@ -6,6 +6,16 @@ first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 ASIO is a trademark of Steinberg Media Technologies GmbH, registered in Europe
 and other countries.
 
+## v0.15.74 -- 2026-10-27
+
+### Fixed
+
+- Fast repeated notes, trills and chords no longer click. Notes now take turns on all eight voices, as on the DX100, so a released note rings out under the next one instead of being cut off.
+- In mono mode, notes played legato change pitch smoothly without restarting the sound, as on the DX100.
+- Big chords that arrive all at once, for example from a sequencer, no longer come out garbled.
+- In ROM mode, the first moments after the original firmware starts, or after a bank file loads, no longer buzz or go silent.
+- Editing a sound while a chord is held no longer changes the attack of the held notes.
+
 ## v0.15.73 -- 2026-10-26
 
 - Maintenance release -- no changes you'll notice.
