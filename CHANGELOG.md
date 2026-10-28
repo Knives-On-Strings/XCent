@@ -6,6 +6,18 @@ first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 ASIO is a trademark of Steinberg Media Technologies GmbH, registered in Europe
 and other countries.
 
+## v0.15.75 -- 2026-10-28
+
+### New
+
+- The level meter is now stereo, with a column for the left channel and one for the right, so you can see the chorus spread the sound.
+- Settings shows where your own patches are saved, with a button to open that folder.
+
+### Improved
+
+- In the patch browser, the DX100, FB-01 and My Banks groups can each be collapsed and expanded.
+- The licence agreement in the Windows and Mac installers now reads cleanly instead of wrapping awkwardly.
+
 ## v0.15.74 -- 2026-10-27
 
 ### Fixed
