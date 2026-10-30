@@ -6,6 +6,20 @@ first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 ASIO is a trademark of Steinberg Media Technologies GmbH, registered in Europe
 and other countries.
 
+## v0.15.76 -- 2026-10-30
+
+### Improved
+
+- The patch browser remembers where you were: it reopens on the same bank, scrolled to the sound you are playing.
+- XCent now tells your host how long each sound's tail really is, so bounces include the whole release.
+- Smoother behaviour under heavy MIDI in ROM mode.
+
+### Fixed
+
+- Sounds with a slow release now fade out fully instead of stopping 3 seconds after you let go, and a note held in ROM mode no longer goes silent.
+- Saving a bank can no longer leave it damaged if the computer or your host crashes in the middle of the save.
+- Very fast playing on the on-screen keyboard can no longer leave a note stuck.
+
 ## v0.15.75 -- 2026-10-28
 
 ### New
