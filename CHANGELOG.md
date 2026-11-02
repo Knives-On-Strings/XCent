@@ -6,6 +6,66 @@ first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 ASIO is a trademark of Steinberg Media Technologies GmbH, registered in Europe
 and other countries.
 
+## v0.15.87 -- 2026-11-01
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.86 -- 2026-11-01
+
+### Improved
+
+- When a new version is out, a small red dot on the About button tells you; About shows the new version and links to what changed.
+
+## v0.15.85 -- 2026-11-01
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.84 -- 2026-11-01
+
+### Fixed
+
+- Turning master tune while notes are playing no longer risks a glitch.
+
+## v0.15.83 -- 2026-11-01
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.82 -- 2026-10-31
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.81 -- 2026-10-31
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.80 -- 2026-10-31
+
+### Improved
+
+- The interface uses less CPU while idle.
+- The scope window draws with far less overhead.
+- Opening the patch browser and saving patches no longer repeat work.
+
+## v0.15.79 -- 2026-10-31
+
+### Improved
+
+- Editing a sound while it plays is smoother: no more glitches or late notes while you turn a knob, and the LFO keeps running steadily during edits.
+
+### Fixed
+
+- LFO Sync now restarts the LFO at every note, as on the original hardware.
+
+## v0.15.78 -- 2026-10-30
+
+### Fixed
+
+- Switching back from ROM mode no longer leaves notes hanging; the next note plays the current sound.
+
+## v0.15.77 -- 2026-10-30
+
+- Maintenance release -- no changes you'll notice.
+
 ## v0.15.76 -- 2026-10-30
 
 ### Improved
