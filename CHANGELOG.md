@@ -6,6 +6,22 @@ first. XCent is an emulation of the Yamaha DX100 by Knives on Strings.
 ASIO is a trademark of Steinberg Media Technologies GmbH, registered in Europe
 and other countries.
 
+## v0.15.91 -- 2026-11-03
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.90 -- 2026-11-03
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.89 -- 2026-11-03
+
+- Maintenance release -- no changes you'll notice.
+
+## v0.15.88 -- 2026-11-02
+
+- Maintenance release -- no changes you'll notice.
+
 ## v0.15.87 -- 2026-11-01
 
 - Maintenance release -- no changes you'll notice.
