@@ -834,7 +834,7 @@ Search [GitHub Issues](https://github.com/Knives-On-Strings/xcent/issues) for kn
 
 **Bug reports & feature requests:** [GitHub Issues](https://github.com/Knives-On-Strings/xcent/issues)
 
-**General questions:** [knivesonstrings@gmail.com](mailto:knivesonstrings@gmail.com)
+**General questions:** [support@knivesonstrings.com](mailto:support@knivesonstrings.com)
 
 **Website:** [knivesonstrings.com/xcent](https://knivesonstrings.com/xcent)
 
@@ -854,7 +854,7 @@ Search [GitHub Issues](https://github.com/Knives-On-Strings/xcent/issues) for kn
 
 XCent's compiled binary statically links the following open-source libraries:
 
-- **Nuked-OPP** — Cycle-accurate YM2164 (OPP) emulator. A modified fork of Nuke.YKT's Nuked-OPM with DX100-specific behavioural tweaks and renamed symbols. Original © 2020, 2026 Nuke.YKT; modifications © Knives on Strings. Licensed under the GNU Lesser General Public License version 2.1 (LGPL-2.1-or-later). Modified source available at the Knives on Strings public GitHub organization (URL in `NOTICES.txt`) and on request via [knivesonstrings@gmail.com](mailto:knivesonstrings@gmail.com).
+- **Nuked-OPP** — Cycle-accurate YM2164 (OPP) emulator. A modified fork of Nuke.YKT's Nuked-OPM with DX100-specific behavioural tweaks and renamed symbols. Original © 2020, 2026 Nuke.YKT; modifications © Knives on Strings. Licensed under the GNU Lesser General Public License version 2.1 (LGPL-2.1-or-later). Modified source available at the Knives on Strings public GitHub organization (URL in `NOTICES.txt`) and on request via [legal@knivesonstrings.com](mailto:legal@knivesonstrings.com).
 - **JUCE 9** — Cross-platform audio plugin framework. © Raw Material Software Limited. Used under the JUCE 9 license, not under the AGPLv3.
 - **clap-juce-extensions** — CLAP format support for JUCE. © 2019–2020 Paul Walker. MIT License.
 - **VST3 SDK** — © Steinberg Media Technologies GmbH. Used under MIT License (via JUCE).
